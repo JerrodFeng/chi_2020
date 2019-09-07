@@ -50,7 +50,7 @@ export default {
         drawMDSLasso: function(data) {
             var myThis = this
             var svg = d3.select('#MDSLasso_svg')
-            // var width = svg.attr('width')
+            var width = svg.attr('width')
             let height = svg.attr('height')
             let dataset = data
             // let dataset = data.map((d) => d['data'])
@@ -59,18 +59,21 @@ export default {
 
                 // .append('svg')
 
-            let margin = { top: 20, bottom: 20, left: 20, right: 20 }
+            let margin = { top: 71.33 - 10, bottom: 30, left: 10, right: 10 }
 
             var xScale = d3.scaleLinear()
                 .domain([d3.min(dataset.map((d) => d['data']), (d) => d[0]), d3.max(dataset.map((d) => d['data']), (d) => d[0])])
                 // .domain([-7, 7])
-                .range([0, height - 2 * margin.left])
+                .range([0, width - margin.left - margin.right])
             var yScale = d3.scaleLinear()
                 .domain([d3.max(dataset.map((d) => d['data']), (d) => d[1]), d3.min(dataset.map((d) => d['data']), (d) => d[1])])
                 // .domain([-7, 7])
-                .range([0, height - 2 * margin.left])
+                .range([0, height - margin.top - margin.bottom])
             var scatterMDS = svg.append('g')
-                .attr('transform', 'translate(' + margin.top + ',' + margin.left + ')')
+                .attr('class', 'scatter_MDS_group')
+                .attr('transform', 'translate(' + margin.left + ', ' + margin.top + ')')
+                .attr('width', width - margin.left - margin.right)
+                .attr('height', height - margin.top - margin.bottom)
 
             // var circles = svg.selectAll('circle')
             //     .data(data)
@@ -79,7 +82,8 @@ export default {
             //     .attr('cx', d => d[0] * w)
             //     .attr('cy', d => d[1] * h)
             //     .attr('r', r)
-            var dots = scatterMDS.selectAll('circle')
+            var dots = scatterMDS.append('g')
+                .selectAll('circle')
                 .data(dataset)
                 .enter()
                 .append('circle')
@@ -100,6 +104,21 @@ export default {
                     } else {
                         return '#bebada'
                     }
+                })
+
+            scatterMDS.append('text')
+                .attr('class', 'similarity_view_heading')
+                .attr('y', -margin.top + 16)
+                .attr('x', 0)
+                .attr('dx', -2)
+                .attr('dy', 4)
+                .attr('fill', '#212529')
+                .attr('font-family', 'sans-serif')
+                .attr('text-anchor', 'start')
+                .attr('font-size', 16)
+                .text(function (d) {
+                    // console.log(d)
+                    return 'Similarity View'
                 })
 
             // var xAxis = d3.axisBottom()
@@ -130,11 +149,20 @@ export default {
                 lasso.possibleItems()
                     .classed('not_possible', false)
                     .classed('possible', true)
+                    // .attr('r', 2.5)
+                    // .style('fill', function(d, i) {
+                    //     if (d.endPeriod === 201807) {
+                    //         return '#fb8072'
+                    //     } else {
+                    //         return '#bebada'
+                    //     }
+                    // })
 
                 // Style the not possible dot
                 lasso.notPossibleItems()
                     .classed('not_possible', true)
                     .classed('possible', false)
+                    // .attr('r', 1.5)
             }
             var lassoEnd = function() {
                 // let lassoedData = []
@@ -146,7 +174,7 @@ export default {
                 // Style the selected dots
                 lasso.selectedItems()
                     .classed('selected', true)
-                    .attr('r', 1.5)
+                    .attr('r', 3)
                     // .attr('fill', 'blue')
                     .style('opacity', 1.0)
                     // console.log(d3.classed('selected', true).node().value)
@@ -195,9 +223,9 @@ export default {
 
 <style>
     #SimilarityView {
-        height: 100%;
-        width: 420 px;
-        margin: 0 auto;
+        width: 422.67px;
+        height: 494px;
+        margin: 2px;
         /* padding-right: 15px; */
     }
 
@@ -205,7 +233,7 @@ export default {
         margin-bottom: 5px;
         margin-top: 5px;
         height: 410px;
-        width: 410px;
+        width: 426.67px;
         border-radius: 0;
         
     }
@@ -353,9 +381,9 @@ export default {
         fill: rgb(200,200,200);
     }
 
-    .possible {
+    /* .possible {
         fill: #EC888C;
-    }
+    } */
 
     /* .selected {
         fill: steelblue;

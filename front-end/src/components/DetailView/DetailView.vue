@@ -4,9 +4,9 @@
 
 <style>
     #DetailView {
-        height: 100%;
-        width: 525px;
-        margin: 0 auto;
+        width: 529.33px;
+        height: 431px;
+        margin: 2px;
     }
 
     #DetailView .card {

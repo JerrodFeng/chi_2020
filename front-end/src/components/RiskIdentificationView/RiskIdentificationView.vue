@@ -4,9 +4,9 @@
 
 <style>
     #RiskIdentificationView {
-        height: 100%;
-        width: 735px;
-        margin: 0 auto;
+        height: 431px;
+        width: 742.67px;
+        margin: 2px;
         /* padding-right: 15px; */
     }
 

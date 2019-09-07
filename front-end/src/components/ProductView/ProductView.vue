@@ -214,9 +214,9 @@ export default {
 
 <style>
     #ProductView {
-        height: 100%;
-        width: 840px;
-        margin: 0 auto;
+        width: 849.33px;
+        height: 494px;
+        margin: 2px;
         /* padding-right: 15px; */
     }
 

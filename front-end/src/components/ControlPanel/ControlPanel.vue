@@ -31,13 +31,9 @@ export default {
 
 <style>
     #ControlPanel {
-        
-        /* height: 100%;
-        width: 350px; */
-        margin: 0 auto;
-        width: 400px;
+        margin: 2px;
+        width: 316px;
         height: 929px;
-        
     }
 
     #ControlPanel .card {

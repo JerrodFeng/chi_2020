@@ -2,7 +2,7 @@
     <div id="app">
         <div class="container-fluid">
             <div class='row'>
-                <div class='col-3'>
+                <div class='col-2'>
                     <div class='row'>
                         <ControlPanel 
                           @listenToChildEvent='showMsgFromChild'
@@ -10,8 +10,8 @@
                         <!-- <View001></View001> -->
                     </div>                   
                 </div>
-                <div class='col-9'>
-                    <div class='row' style = 'width: 1280px'>
+                <div class='col-8'>
+                    <div class='row'>
                         <div class='col-4'>
                             <div class='row'>
                                 <SimilarityView 
@@ -30,7 +30,7 @@
                             </div>                           
                         </div>                        
                     </div>
-                    <div class='row'  style = 'width: 1280px'>
+                    <div class='row'>
                         <div class='col-5'>
                             <div class="row">
                                 <DetailView></DetailView>
@@ -98,7 +98,7 @@
 
 <style>
     #app {
-        width: 100%;
+        width: 1920px;
         margin: 0 auto;
         font-family: 'Avenir', Helvetica, Arial, sans-serif;
         -webkit-font-smoothing: antialiased;

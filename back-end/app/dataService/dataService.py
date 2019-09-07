@@ -250,7 +250,7 @@ class DataService(object):
             tmpModelInfo['topRank'] = modelRankDict[modelName[i]]
             modelInfo.append(tmpModelInfo)
         print(modelInfo)
-        print('----------分割线-------------')
+        # print('----------分割线-------------')
         print(lassoedDataSummary)
         result = {'modelInfomation': modelInfo, 'lassoedDataInformation': lassoedDataSummary}
 
