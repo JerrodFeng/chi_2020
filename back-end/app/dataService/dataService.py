@@ -252,12 +252,13 @@ class DataService(object):
         print(modelInfo)
         print('----------分割线-------------')
         print(lassoedDataSummary)
+        result = {'modelInfomation': modelInfo, 'lassoedDataInformation': lassoedDataSummary}
 
 
 
         # result = {'data':{ {'Acc':lassoedDataModelAccDict}, {'Variance': lassoPointInfoDict}, {'ModelRank': modelRankDict}}}
         # print(result)
-        result = 1
+        
         print('finish')
         return result
 
