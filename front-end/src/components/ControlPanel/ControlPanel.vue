@@ -28,7 +28,9 @@
         <div id='overview_model_head'>
             Models
         </div>
-        <svg id='overview_model_svg' style="width: 316px; height: 400px;"></svg>
+        <div id='overview_model_svg_div'>
+            <svg id='overview_model_svg'></svg>
+        </div>
         
     </div>
 </template>
@@ -117,9 +119,27 @@ export default {
             let topKModels = newModelInformation.filter(function(d, i) {
                 return i < topK
             })
-            this.topKModels = topKModels.map(function(d) {
+            topKModels = topKModels.map(function(d) {
                 return d.modelName
             })
+
+            this.topKModels = topKModels
+
+            // draw the overview
+            let modelGap = 30
+
+            let totalWidth = 316
+            let height = modelGap * newModelInformation.length
+            let margin = {top: 30, right: 10, bottom: 10, left: 10}
+            // let width = totalWidth - margin.left - margin.right
+            let totalHeight = height + margin.top + margin.bottom
+
+            // var svg =
+            d3.select('#overview_model_svg')
+                .attr('width', totalWidth)
+                .attr('height', totalHeight)
+                .append('g')
+                .attr('transform', 'translate(' + margin.left + ', ' + margin.top + ')')
         },
 
         weightChanged: function() {
@@ -287,7 +307,7 @@ export default {
     #ControlPanel {
         margin: 2px;
         width: 316px;
-        height: 929px;
+        /* height: 929px; */
     }
 
     #ControlPanel #overview_head {
@@ -347,6 +367,13 @@ export default {
         margin: 2px 15px; 
         padding: 0px 0px 0px 0px;
         border-bottom: 1px solid #bdbdbd;
+    }
+
+    #ControlPanel #overview_model_svg_div {
+        width: 316px;
+        height: 590px;
+        overflow-y: auto;
+        overflow-x: hidden;
     }
 
     #ControlPanel .card {
@@ -503,4 +530,24 @@ export default {
     .selectedEmotionOnList {
         border: 2px solid rgba(250, 5, 5, 1);
     } */
+
+    /* width */
+    ::-webkit-scrollbar {
+    width: 4px;
+    }
+
+    /* Track */
+    ::-webkit-scrollbar-track {
+    background: #f1f1f1; 
+    }
+    
+    /* Handle */
+    ::-webkit-scrollbar-thumb {
+    background: #888; 
+    }
+
+    /* Handle on hover */
+    ::-webkit-scrollbar-thumb:hover {
+    background: #555; 
+    }
 </style>
