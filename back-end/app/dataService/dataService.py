@@ -90,15 +90,13 @@ class DataService(object):
         # {'SimilarityViewData': {'data': [{'endPeriod': 201805, 'item': 'item2356'}, {'endPeriod': 201805, 'item': 'item2356'}]}}
         # print('changed data::', lassoedDataFromSimilarityView['SimilarityViewData']['data'])
         
-        # 求acc
         similarityDataIndex = lassoedDataFromSimilarityView['SimilarityViewData']['data']
         endPeriodDict ={'data': [{'endPeriod': similarityDataIndex[0]['endPeriod']}]}
         collectionKey = {}
         newEndPeriod = {}
         dfItemInfo = []
-        # productPresentInfo = {'accuracy': [], 'variance':[], 'applicability':[]}
+        predictMonth = 201807
         for i in range(len(similarityDataIndex)):
-            # itemInfo = {'data':[]}
             if similarityDataIndex[i]['endPeriod'] not in endPeriodDict['data']:
                 newEndPeriod['endPeriod'] = similarityDataIndex[i]['endPeriod']
                 endPeriodDict['data'].append(newEndPeriod)
@@ -111,19 +109,22 @@ class DataService(object):
                     itemResult['endPeriod'] = similarityDataIndex[i]['endPeriod']
                     itemResult['_id'] = ''
                     dfItemInfo.append(itemResult)
-        dfItemInfo = pd.DataFrame(dfItemInfo)
+        dfItemInfo = pd.DataFrame(dfItemInfo) #所有lasso点的信息每个点25条数据
 
         modelName= ["GMNR", "ada", "arima", "arimax", "cat", "elnet", "extra", "gbdt", "knn", "lasso", "lgb", "lr", "myarima", "myarimax", "rf", "ridge", "svr", "xgb", "arima_ts", "exps_ts", "myarima_ts", "lstm_classic", "maml", "rl2", "rnn_classic"]
         models = {'models': modelName}
         ModelAcc = []
+        ModelVar = []
         for i in range(len(modelName)):
             tmp = {}
-            dfModelAcc = dfItemInfo.loc[dfItemInfo.model == models['models'][i]]
+            dfModelAcc = dfItemInfo.loc[(dfItemInfo.model == models['models'][i])&(dfItemInfo.endPeriod != predictMonth)]
             dfModelAcc['accuracy'] = pd.to_numeric(dfModelAcc['accuracy'],errors='coerce')
             acc = dfModelAcc['accuracy'].mean(axis = 0)
+            var = dfModelAcc['accuracy'].var(axis = 0)
             tmp['model'] = models['models'][i]
             tmp['acc'] = acc
-            ModelAcc.append(tmp)
+            tmp['variance'] = var
+            ModelAcc.append(tmp)    
         lassoedDataModelAccList = sorted(ModelAcc, key=lambda k: k['acc'], reverse=True)
         # print(lassoedDataModelAccList)
         lassoedDataModelAccDict = {'lassoedDataModelAcc':lassoedDataModelAccList}
@@ -140,15 +141,11 @@ class DataService(object):
             modelRankDict[modelName[i]] = 0
         similarityDataIndex = lassoedDataFromSimilarityView['SimilarityViewData']['data']
         endPeriodDict ={'data': [{'endPeriod': similarityDataIndex[0]['endPeriod']}]}
-        # endPeriodDict.append(201909)
-        # print(type(endPeriodDict['data']))
         collectionKey = {}
         newEndPeriod = {}
-        modelVariance = {}
+        # modelVariance = {}
         tmpVariance ={}
-        lassoedDataSummary = []
-        # lassoedDataInfo = {'data':[]}
-        # productPresentInfo = {'accuracy': [], 'variance':[], 'applicability':[]}
+        lassoedDataSummary = []   
         for i in range(len(similarityDataIndex)):
             print('=========',i,'========',similarityDataIndex[i]['item'],'=================')
             lassoPointInfo = []
@@ -158,46 +155,34 @@ class DataService(object):
             month = similarityDataIndex[i]['endPeriod']
             collectionKey = {'data':[{'collection': 'collection_'+str(month)}]}
             collection = self.db[collectionKey['data'][0]['collection']]
-            # 第一次找无所谓判断是否在，肯定在
             lassoPointResults = collection.find({'item':similarityDataIndex[i]['item']})#.sort('accuracy', -1)
-            # if eachMonthResults.count()!=0:
             for lassoPointResult in lassoPointResults:
                 lassoPointResult['endPeriod'] = similarityDataIndex[i]['endPeriod']
                 if float(lassoPointResult['accuracy'])>-0.01:
                     # print(lassoPointResult['accuracy'])
                     lassoPointInfo.append(lassoPointResult)
-            if len(lassoPointInfo) != 0:
+            if len(lassoPointInfo)!= 0:
                 dfLassoPointInfo = pd.DataFrame(lassoPointInfo)           
                 modelItemVar = []
                 # print('-********',dfLassoPointInfo['item'],'********')
-                
                 for j in range(dfLassoPointInfo.shape[0]):
                     endPeriod = dfLassoPointInfo.iloc[j]['endPeriod']
                     monthIndex = monthArray.index(endPeriod)
                     tmpAcc = []
                     for p in range(10):
                         currentMonth = monthArray[monthIndex-p]
-            #             print('------',currentMonth,'-------')
                         collectionKey = {'data':[{'collection': 'collection_'+str(currentMonth)}]}
                         collection = self.db[collectionKey['data'][0]['collection']]
-                        # existItemResults = collection.distinct('item')
-                        # for existItemResult in existItemResults:
-
                         eachMonthResults= collection.find({'$and':[{'item':dfLassoPointInfo.iloc[j]['item']},{'model':dfLassoPointInfo.iloc[j]['model']}]})
                         eachCollectionAcc = []
                         if eachMonthResults.count()!=0:
                             for eachMonthResult in eachMonthResults:
                                 if float(eachMonthResult['accuracy'])>-0.01:
-                                    # print(eachMonthResult['accuracy'])
                                     eachCollectionAcc.append(eachMonthResult['accuracy'])
                             tmp =np.array(eachCollectionAcc)
                             tmp = tmp.astype(float)
-                            # np.where(tmp>-0.01)
                             eachMonthMeanAcc = np.nanmean(tmp)
                             tmpAcc.append(eachMonthMeanAcc)
-                        # else:
-                        #     print('@@@@@@@@@@@@@@@@@@@@@@@')
-                    # print(tmpAcc)
                     eachLassoedPointModelItemVar = np.nanvar((np.array(tmpAcc)).astype(float))
                     modelItemVar.append(eachLassoedPointModelItemVar)
                     np.array(modelItemVar)
@@ -205,18 +190,15 @@ class DataService(object):
                 for m in range(dfLassoPointInfo.shape[0]):
                     if i == 0:
                         tmpVariance[dfLassoPointInfo.iloc[m]['model']] =[dfLassoPointInfo.iloc[m]['modelItemVar']]
-        #                 modelVariance.append(tmpVariance)
                     else:
                         tmpVariance[dfLassoPointInfo.iloc[m]['model']].append(dfLassoPointInfo.iloc[m]['modelItemVar'])  
-                        # dfModelItemVar = dfLassoPointInfo[['model', 'item', 'modelItemVar', ]]
                 # print('+++++variance++++',modelItemVar )
                 dfLassoPointInfoDescending = dfLassoPointInfo.sort_values(by='accuracy', ascending=False)
                 lassoPointInfoDescendingDict = dfLassoPointInfoDescending.to_dict(orient='records')
-                # print('%%%%%%%%%%%%',lassoPointInfoDict)
-                for q in range(5):
-                    tmpModel = dfLassoPointInfoDescending.iloc[q]['model']
-                    modelRankDict[tmpModel]=modelRankDict[tmpModel]+1
-                # lassoPointInfoDescending
+                if lassoPointInfoDescendingDict[0]['endPeriod'] != predictMonth:
+                    for q in range(5):
+                        tmpModel = dfLassoPointInfoDescending.iloc[q]['model']
+                        modelRankDict[tmpModel]=modelRankDict[tmpModel]+1
                 dfLassoPointInfoDescending= dfLassoPointInfoDescending.loc[:,['item', 'endPeriod', 'model','accuracy', 'modelItemVar', 'predictValue', 'realValue' ]]
                 lassoPointInfoDescendingDict = dfLassoPointInfoDescending.to_dict(orient='records')
                 # print(lassoPointInfoDescendingDict)
@@ -230,35 +212,35 @@ class DataService(object):
                         tmpLassoPointInfoDescendingDict['model'] = [tmpLassoPointInfoModel]
                     else:
                         keys = ('model','accuracy', 'modelItemVar', 'predictValue', 'realValue')
-                        tmpLassoPointInfoModel =  {k: lassoPointInfoDescendingDict[w][k] for k in keys}                
-                        tmpLassoPointInfoDescendingDict['model'].append(tmpLassoPointInfoModel)
+                        tmpLassoPointInfoModel =  {k: lassoPointInfoDescendingDict[w][k] for k in keys} 
+                        if w%2 ==0:
+                            tmpLassoPointInfoDescendingDict['model'].append(tmpLassoPointInfoModel)
                 lassoedDataSummary.append(tmpLassoPointInfoDescendingDict)    
 
                 # print(lassoPointInfoDescendingDict)
         modelRankDict=dict(Counter(modelRankDict).most_common())         
-        # print(modelRankDict)  
-        for i in range(len(modelName)):
-            modelVariance[modelName[i]]=np.mean(tmpVariance[modelName[i]])
+        print(modelRankDict)  
+        tmpmaxModelVarianceList = []
+        for i in range(len(lassoedDataModelAccDict['lassoedDataModelAcc'])):
+            tmpmaxModelVarianceList.append(lassoedDataModelAccDict['lassoedDataModelAcc'][i]['variance'])
+        maxModelVariance = max(tmpmaxModelVarianceList)
         # print('+++++',modelVariance,'++++')
         modelInfo = []
         for i in range( len(modelName)):
             tmpModelInfo = {}
             tmpModelInfo['modelName'] = modelName[i]
             tmp = dfLassoedDataModelAccList.loc[(dfLassoedDataModelAccList['model']==modelName[i]),['acc']].values
+            tmpVarianceLast = dfLassoedDataModelAccList.loc[(dfLassoedDataModelAccList['model']==modelName[i]),['variance']].values
             tmpModelInfo['accuracy'] = tmp[0][0]
-            tmpModelInfo['variance'] = modelVariance[modelName[i]]
-            tmpModelInfo['topRank'] = modelRankDict[modelName[i]]
+            tmpModelInfo['variance'] = tmpVarianceLast[0][0]/maxModelVariance
+            tmpModelInfo['topRank'] = (modelRankDict[modelName[i]])/max(modelRankDict.values())
             modelInfo.append(tmpModelInfo)
-        print(modelInfo)
-        # print('----------分割线-------------')
-        print(lassoedDataSummary)
-        result = {'modelInfomation': modelInfo, 'lassoedDataInformation': lassoedDataSummary}
+        # print(modelInfo)
+        # print('----------fengexian-------------')
+        # print(lassoedDataSummary)
+        result = {'modelInformation': modelInfo, 'lassoedDataInformation': lassoedDataSummary}
 
 
-
-        # result = {'data':{ {'Acc':lassoedDataModelAccDict}, {'Variance': lassoPointInfoDict}, {'ModelRank': modelRankDict}}}
-        # print(result)
-        
         print('finish')
         return result
 

@@ -209,13 +209,14 @@ export default {
 
     },
     mounted: function () {
+        this.$nextTick(() => {
+            dataService.drawMDSLasso((data) => {
+                console.log('SimilarityView::returned data: ', data)
+                this.message2 = data.data
+            })
+        })
         // this.drawBarChart = new DrawBarChart('#BarChart')
         // this.drawMDSLasso = new DrawMDSLasso('#MDSLasso')
-
-        dataService.drawMDSLasso((data) => {
-            console.log('SimilarityView::returned data: ', data)
-            this.message2 = data.data
-        })
     }
 }
 

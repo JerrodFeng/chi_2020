@@ -6,6 +6,8 @@
                     <div class='row'>
                         <ControlPanel 
                           @listenToChildEvent='showMsgFromChild'
+                          @changeTopKModels='changeTopKModels'
+                          :modelInformation='modelInformation'
                         ></ControlPanel>
                         <!-- <View001></View001> -->
                     </div>                   
@@ -25,7 +27,9 @@
                             <div class='row'>
                                 <ProductView
                                 :lassoedDataFromSimilarityView = 'lassoedDataFromSimilarityView'
+                                :topKModels = 'topKModels'
                                 @changeLassoedDataFromSimilarityView ='changeLassoedDataFromSimilarityView'
+                                @changeModelInformation='changeModelInformation'
                                 ></ProductView>
                             </div>                           
                         </div>                        
@@ -72,7 +76,9 @@
         data() {
             return {
                 message: 'hello child',
-                lassoedDataFromSimilarityView: { }
+                lassoedDataFromSimilarityView: { },
+                modelInformation: [],
+                topKModels: []
             }
         },
         methods: {
@@ -83,6 +89,14 @@
             },
             changeLassoedDataFromSimilarityView: function(newLassoedDataFromSimilarityView) {
                 this.lassoedDataFromSimilarityView = newLassoedDataFromSimilarityView
+            },
+    
+            changeModelInformation: function(newModelInformation) {
+                this.modelInformation = newModelInformation
+            },
+
+            changeTopKModels: function(newTopKModels) {
+                this.topKModels = newTopKModels
             }
         },
         mounted: function () {

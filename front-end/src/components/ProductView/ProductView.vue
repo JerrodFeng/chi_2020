@@ -10,13 +10,15 @@ export default {
     components: {
     },
     props: {
-        lassoedDataFromSimilarityView: {}
+        lassoedDataFromSimilarityView: Object,
+        topKModels: Array
     },
     data() {
         return {
             arcData: [],
             sortedArcData: [],
-            lassoedData: []
+            lassoedData: [],
+            modelInformation: []
         }
     },
     watch: {
@@ -25,10 +27,30 @@ export default {
             this.fetchArcData(newValue)
         },
         lassoedDataFromSimilarityView(newValue, oldValue) {
-            this.printLassoedData(newValue)
+            // this.printLassoedData(newValue)
             dataService.fetchLassoedDataFromSimilarityViewPost(newValue, (returnedData) => {
                 // 画glyph 将来把这个函数天蝎了
+                console.log('ProductView::returnedData: ', returnedData)
+                this.modelInformation = returnedData.modelInformation
             })
+        },
+
+        modelInformation: function(newValue, oldValue) {
+            this.$emit('changeModelInformation', newValue)
+        },
+
+        topKModels: function(newValue, oldValue) {
+            console.log('ProductView::topKModels change to: ', newValue)
+
+            let z = d3.scaleOrdinal()
+                    .range([
+                        '#fbb4ae', // red
+                        '#b3cde3', // blue
+                        '#ccebc5', // green
+                        '#decbe4', // purple
+                        '#fed9a6' // orange
+                    ])
+            z.domain(newValue)
         }
         // lassoedData: function(newValue, oldValue) {
         //     let lassoedData = this.lassoedDataFromOverview
@@ -48,10 +70,10 @@ export default {
         // fetchArcData2: function(data) {
         //     console.log('Overview::fetchArcData2: data: ', data)
         // },
-        printLassoedData: function (data) {
-            let testData = this.lassoedDataFromSimilarityView
-            console.log('productView::testData::', testData.SimilarityViewData.data)
-        },
+        // printLassoedData: function (data) {
+        //     let testData = this.lassoedDataFromSimilarityView
+        //     console.log('ProductView::lassoedData from similarity view:', testData.SimilarityViewData.data)
+        // },
         fetchArcData: function(data) {
             // console.log('fetch::productview', data)
             var numItem = 5
