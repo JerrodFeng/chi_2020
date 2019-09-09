@@ -80,6 +80,31 @@ function fetchLassoedDataFromSimilarityViewPost (lassoedDataFromSimilarityView, 
     })
 }
 
+// post method
+function getDetailViewData(selectedItem, topKModels, callback) {
+    const url = `${dataServerUrl}/getDetailViewData`
+    $http.post(url, {
+        selectedItem: selectedItem,
+        topKModels: topKModels
+    }).then(response => {
+        callback(response.data)
+    }, errResponse => {
+        console.log(errResponse)
+    })
+}
+
+function getRiskIdentificationViewData(selectedItem, productDataBefore2017, callback) {
+    const url = `${dataServerUrl}/getRiskIdentificationViewData`
+    $http.post(url, {
+        selectedItem: selectedItem,
+        productDataBefore2017: productDataBefore2017
+    }).then(response => {
+        callback(response.data)
+    }, errResponse => {
+        console.log(errResponse)
+    })
+}
+
 export default {
     test,
     initialization,
@@ -88,5 +113,7 @@ export default {
     drawMDSLasso,
     fetchArcData,
     fetchLassoedDataPost,
-    fetchLassoedDataFromSimilarityViewPost
+    fetchLassoedDataFromSimilarityViewPost,
+    getDetailViewData,
+    getRiskIdentificationViewData
 }

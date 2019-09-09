@@ -17,19 +17,21 @@
                         <div class='col-4'>
                             <div class='row'>
                                 <SimilarityView 
-                                :message='message' 
-                                @listenToChildEvent='showMsgFromChild'
-                                @changeLassoedDataFromSimilarityView ='changeLassoedDataFromSimilarityView'
+                                  :message='message' 
+                                  @listenToChildEvent='showMsgFromChild'
+                                  @changeLassoedDataFromSimilarityView='changeLassoedDataFromSimilarityView'
                                 ></SimilarityView>
                             </div>                            
                         </div>
                         <div class='col-8'>
                             <div class='row'>
                                 <ProductView
-                                :lassoedDataFromSimilarityView = 'lassoedDataFromSimilarityView'
-                                :topKModels = 'topKModels'
-                                @changeLassoedDataFromSimilarityView ='changeLassoedDataFromSimilarityView'
-                                @changeModelInformation='changeModelInformation'
+                                  :lassoedDataFromSimilarityView='lassoedDataFromSimilarityView'
+                                  :topKModels='topKModels'
+                                  @changeLassoedDataFromSimilarityView='changeLassoedDataFromSimilarityView'
+                                  @changeModelInformation='changeModelInformation'
+                                  @changeSelectedItem='changeSelectedItem'
+                                  @changeProductData='changeProductData'
                                 ></ProductView>
                             </div>                           
                         </div>                        
@@ -37,12 +39,19 @@
                     <div class='row'>
                         <div class='col-5'>
                             <div class="row">
-                                <DetailView></DetailView>
+                                <DetailView
+                                  :topKModels='topKModels'
+                                  :selectedItem='selectedItem'
+                                ></DetailView>
                             </div>
                         </div>
                         <div class='col-7'>
                             <div class="row">
-                                <RiskIdentificationView></RiskIdentificationView>
+                                <RiskIdentificationView
+                                  :topKModels='topKModels'
+                                  :selectedItem='selectedItem'
+                                  :productData='productData'
+                                ></RiskIdentificationView>
                             </div>        
                         </div>
                     </div>
@@ -78,7 +87,9 @@
                 message: 'hello child',
                 lassoedDataFromSimilarityView: { },
                 modelInformation: [],
-                topKModels: []
+                topKModels: [],
+                selectedItem: null,
+                productData: []
             }
         },
         methods: {
@@ -97,6 +108,14 @@
 
             changeTopKModels: function(newTopKModels) {
                 this.topKModels = newTopKModels
+            },
+
+            changeSelectedItem: function(newSelectedItem) {
+                this.selectedItem = newSelectedItem
+            },
+
+            changeProductData: function(newProductData) {
+                this.productData = newProductData
             }
         },
         mounted: function () {

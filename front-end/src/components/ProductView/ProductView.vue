@@ -40,6 +40,7 @@ export default {
 
         productData: function(newValue, oldValue) {
             console.log('ProductView::productData: ', newValue)
+            this.$emit('changeProductData', newValue)
         },
 
         modelInformation: function(newValue, oldValue) {
@@ -69,6 +70,8 @@ export default {
                     return 0.0
                 })
             }
+
+            this.$emit('changeSelectedItem', newValue)
         }
     },
     methods: {
@@ -846,14 +849,6 @@ export default {
     } */
     #ProductView .myArc {
         border: 5px solid #000;
-
-    }
-
-    # #overview_model_svg_div {
-        width: 316px;
-        height: 590px;
-        overflow-y: auto;
-        overflow-x: hidden;
     }
 
     /* width */

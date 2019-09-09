@@ -1,201 +1,352 @@
-<template src='./DetailView.html'></template>
+<template>
+    <div id='detail_view' class='border'>
+        <svg id='detail_view_svg'></svg>
+        <div id='detail_view_tooltip'></div>
+    </div>
+</template>
 
-<script src='./DetailView.js'></script>
+<script>
+/* global d3 */
+import dataService from '../../service/dataService'
+
+export default {
+    name: 'DetailView',
+    components: {
+    },
+    props: {
+        topKModels: Array,
+        selectedItem: Object
+    },
+    data() {
+        return {
+            modelPerformanceData: [],
+            demandData: []
+        }
+    },
+    watch: {
+        selectedItem: function (newValue, oldValue) {
+            console.log('DetailView::this.selectedItem change to: ', newValue)
+
+            d3.select('#detail_view_svg').html('')
+            // draw detail view head
+            d3.select('#detail_view_svg')
+                .append('text')
+                .attr('class', 'detail_view_heading')
+                .attr('y', 16)
+                .attr('x', 0)
+                .attr('dx', 8)
+                .attr('dy', 4)
+                .attr('fill', '#212529')
+                .attr('font-family', 'sans-serif')
+                .attr('text-anchor', 'start')
+                .attr('font-size', 16)
+                .text(function (d) {
+                    // console.log(d)
+                    return 'Detail View'
+                })
+
+            if (newValue !== null) {
+                this.getDetailViewData()
+            }
+        },
+
+        topKModels: function (newValue, oldValue) {
+            console.log('DetailView::this.topKModels change to: ', newValue)
+        },
+
+        modelPerformanceData: function(newValue, oldValue) {
+            this.drawModelPerformanceView()
+        },
+
+        demandData: function(newValue, oldValue) {
+            // console.log('DetailView::demandData changes to: ', newValue)
+            this.drawDemandDataView()
+        }
+    },
+    methods: {
+        getDetailViewData: function() {
+            dataService.getDetailViewData(this.selectedItem, this.topKModels, (returnedData) => {
+                console.log('DetailView::returnedData: ', returnedData)
+                this.modelPerformanceData = returnedData.modelPerformanceData
+                this.demandData = returnedData.demandData
+            })
+        },
+
+        drawModelPerformanceView: function() {
+            let modelPerformanceData = this.modelPerformanceData
+            let topKModels = this.topKModels
+
+            let totalWidth = 529.33
+            let totalHeight = 431
+            let margin = {top: 30, right: 10, bottom: 10, left: 90}
+
+            let barChartGap = 45
+            let barChartHeight = 30
+            let barWidth = 25
+            let barGap = 35
+
+            var svg = d3.select('#detail_view_svg')
+                .attr('width', totalWidth)
+                .attr('height', totalHeight)
+                .append('g')
+                .attr('transform', 'translate(' + margin.left + ', ' + margin.top + ')')
+
+            var modelPerformanceGroup = svg.append('g')
+                .selectAll('.model_performance_group')
+                .data(modelPerformanceData)
+                .enter()
+                .append('g')
+                .attr('class', 'model_performance_group')
+                .attr('transform', function(d, i) {
+                    let translateX = 0
+                    let translateY = i * barChartGap
+
+                    return 'translate(' + translateX + ', ' + translateY + ')'
+                })
+
+            let y = d3.scaleLinear()
+                .range([barChartHeight, 0])
+                .domain([0, 1])
+
+            let z = d3.scaleOrdinal()
+                    .range([
+                        '#fbb4ae', // red
+                        '#b3cde3', // blue
+                        '#ccebc5', // green
+                        '#decbe4', // purple
+                        '#fed9a6' // orange
+                    ])
+            z.domain(topKModels)
+
+            // text
+            modelPerformanceGroup.append('g')
+                .attr('class', 'model_name')
+                .append('text')
+                .attr('y', 6)
+                .attr('x', -10)
+                .attr('dy', barChartHeight / 2)
+                .attr('fill', '#212529')
+                .attr('font-family', 'sans-serif')
+                .attr('text-anchor', 'end')
+                .attr('font-size', 12)
+                .text(function (d) {
+                    // console.log(d)
+                    return d.model + ': '
+                })
+
+            modelPerformanceGroup.selectAll('.model_performance_rectangle')
+                .data(function(d) {
+                    return d.accuracy
+                })
+                .enter()
+                .append('rect')
+                .attr('class', 'model_performance_rectangle')
+                .attr('x', function(d, i) {
+                    return i * barGap
+                })
+                .attr('width', function(d, i) {
+                    return barWidth
+                })
+                .attr('y', function(d, i) {
+                    if (d.accuracy < -0.5) {
+                        return 0
+                    } else {
+                        return y(d.accuracy)
+                    }
+                })
+                .attr('height', function(d, i) {
+                    if (d.accuracy < -0.5) {
+                        return barChartHeight
+                    } else {
+                        return barChartHeight - y(d.accuracy)
+                    }
+                })
+                .style('fill', function(d, i) {
+                    if (d.accuracy < -0.5) {
+                        return '#ffffff'
+                    } else {
+                        return z(d.model)
+                    }
+                })
+                .style('stroke', function(d, i) {
+                    return z(d.model)
+                })
+                .style('stroke-width', function(d, i) {
+                    if (d.accuracy < -0.5) {
+                        return 1
+                    } else {
+                        return 0
+                    }
+                })
+        },
+
+        drawDemandDataView: function() {
+            let demandData = this.demandData
+
+            let totalWidth = 529.33
+            let totalHeight = 431
+            let margin = {top: 30 + 225 + 15, right: 10 + 20, bottom: 10 + 30, left: 90 - 40}
+
+            let lineChartWidth = totalWidth - margin.left - margin.right
+            let lineChartHeight = totalHeight - margin.top - margin.bottom
+
+            let demandLength = demandData[0].demand.length
+
+            var svg = d3.select('#detail_view_svg')
+                .attr('width', totalWidth)
+                .attr('height', totalHeight)
+                .append('g')
+                .attr('transform', 'translate(' + margin.left + ', ' + margin.top + ')')
+
+            let typeArray = demandData.map(function(d) {
+                return d.type
+            })
+
+            let z = d3.scaleOrdinal()
+                    .range([
+                        '#969696', // gray
+                        '#fbb4ae', // red
+                        '#b3cde3', // blue
+                        '#ccebc5', // green
+                        '#decbe4', // purple
+                        '#fed9a6' // orange
+                    ])
+            z.domain(typeArray)
+
+            var demandDataGroup = svg.append('g')
+                .selectAll('.demand_data_group')
+                .data(demandData)
+                .enter()
+                .append('g')
+                .attr('class', 'demand_data_group')
+                .style('stroke', function(d, i) {
+                    return z(d.type)
+                })
+
+            let x = d3.scaleLinear().range([0, lineChartWidth])
+            let y = d3.scaleLinear().range([lineChartHeight, 0])
+
+            // define the line
+            let demandLine = d3.line()
+                .x(function(d) { return x(d.index) })
+                .y(function(d) { return y(d.demand) })
+                .defined(function(d) {
+                    return d.demand
+                })
+                // .curve(d3.curveMonotoneX)
+
+            x.domain([0, demandLength])
+            y.domain([0, 1])
+
+            // draw the line
+            demandDataGroup.selectAll('path')
+                .data(function(d) {
+                    console.log('The data of path for demand: ', [d.demand])
+                    return [d.demand]
+                })
+                .enter()
+                .append('path')
+                .attr('class', 'demand_line')
+                .attr('d', demandLine)
+
+            // Add the X Axis
+            svg.append('g')
+                .attr('class', 'axis')
+                .attr('transform', 'translate(0,' + lineChartHeight + ')')
+                .call(d3.axisBottom(x))
+
+            // Add the Y Axis
+            svg.append('g')
+                .attr('class', 'axis')
+                .call(d3.axisLeft(y))
+
+            // x axis caption
+            svg.append('text')
+                .attr('y', lineChartHeight)
+                .attr('x', lineChartWidth)
+                .attr('dy', 28)
+                .attr('fill', '#969696')
+                .attr('font-family', 'sans-serif')
+                .attr('text-anchor', 'end')
+                .attr('font-size', 10)
+                .text('month')
+
+            // y axis caption
+            svg.append('text')
+                .attr('y', 0)
+                .attr('x', 0)
+                .attr('dy', -10)
+                .attr('fill', '#969696')
+                .attr('font-family', 'sans-serif')
+                .attr('text-anchor', 'end')
+                .attr('font-size', 10)
+                .text('accuracy')
+        }
+    },
+    mounted: function () {
+        this.$nextTick(() => {
+            // draw detail view head
+            d3.select('#detail_view_svg')
+                .append('text')
+                .attr('class', 'detail_view_heading')
+                .attr('y', 16)
+                .attr('x', 0)
+                .attr('dx', 8)
+                .attr('dy', 4)
+                .attr('fill', '#212529')
+                .attr('font-family', 'sans-serif')
+                .attr('text-anchor', 'start')
+                .attr('font-size', 16)
+                .text(function (d) {
+                    // console.log(d)
+                    return 'Detail View'
+                })
+        })
+    }
+}
+</script>
 
 <style>
-    #DetailView {
+    #detail_view {
         width: 529.33px;
         height: 431px;
         margin: 2px;
     }
 
-    #DetailView .card {
-        margin-bottom: 5px;
-        margin-top: 5px;  
-        height: 425px;
-        width: 515px;
-        border-radius: 0;
+    #detail_view #detail_view_svg {
+        width: 529.33px;
+        height: 431px;
     }
 
-    /* #DetailView .card-header {
-        font-size: 12px;
-        width: 100%;
-        padding: 6px 12px;
-        height: 34px;
-    } */
-
-    /* #DetailView .card-block {
-        padding: 0px;
-        position: relative;
-    } */
-
-    /* #peopleview text {
-        font-weight: 300;
-        font-family: "Helvetica Neue", Helvetica, Arial, sans-serf;
-        font-size: 14px;
-    } */
-
-    #characterContainer {
-        height: calc(100% - 34px);
-        /* border-radius: 2px; */
-        /* border: 1px solid #fe6271; */
+    #detail_view .tooltip {
+        background-color: #fff;
+        border: 2px solid #ccc;
+        border-radius: 8px;
+        padding: 10px;
     }
 
-    /* #peopleview .card-box {
-        box-shadow: 0 8px 42px 0 rgba(0, 0, 0, 0.08);
-        border-radius: 5px;
-        background-clip: padding-box;
-    } */
-
-    /* .container-left {
-        float: left;
-        width: 15%;
-        height: 100%;
-        margin: 0px;
-        overflow: auto;
-        border-right: 1px solid rgba(0,0,0,.125);
+    #detail_view .model_performance_group {
+        fill: #80b1d3;
     }
 
-    .container-right {
-        float: right;
-        width: 85%;
-        height: 100%;
-        margin: 0px;
-        position: relative;
-    } */
-
-    /* #peopleview .personRow {
-        width: 100%;
-        
-        margin: 0px;
-        box-shadow: 0 8px 42px 0 rgba(0, 0, 0, 0.08);
-        border-radius: 5px;
-        background-clip: padding-box;
-    } */
-
-     /* #peopleview .row {
-        width: 100%;
-        margin: 0px;
-        height: 140px;
-        /* margin-bottom: -25px;
-    } */
-
-    /* #peopleview .divPhoto {
-        margin: auto;
-        margin-top: 5px;
-        max-height: 50%;
-        max-width: 50%;
-    }
-
-    #peopleview .personPhoto {
-        max-height: 100%;
-        max-width: 100%;
-    }
-    #peopleview .personPhotoDiv {
-        padding-top: 5px;
-        padding-bottom: 5px;
-        max-width: 120px;
-        
-    } */
-    /* #peopleview .personGraph {
-        min-width: calc(100% - 120px);
-        height: 100%;
-        padding: 0px;
-    }
-    #peopleview .personName {
-        margin-top: 2px;
-        margin-bottom: 5px;
-        font-size: 14px;
-        font-weight: 700;
-        line-height: 18px;
-    }
-
-    #peopleview div.tooltip {
-		position: absolute;
-		text-align: center;
-		pointer-events: none;
-		font-family: sans-serif;
-		font-size: 12px;
-		text-anchor: middle;
-		background-color: lightsteelblue;;
-		border-radius: 3px;
-		padding: 6px 12px;
-	} */
-
-    /* #selectedPeopleView {
-        width: 100%;
-        height: 100%;
-        position: relative;
-    }
-
-    #heatmapDiv {
-        position: absolute;
-        pointer-events: none;
-    }
-
-    .heatmap-canvas {
-        pointer-events: none;
-    }
-
-    .lasso path {
-            stroke: rgb(80,80,80);
-            stroke-width:2px;
-        }
-
-    .lasso .drawn {
-        fill-opacity:.05 ;
-    } */
-
-    /* .lasso .loop_close {
-        fill:none;
-        stroke-dasharray: 4,4;
-    }
-
-    .lasso .origin {
-        fill:#3399FF;
-        fill-opacity:.5;
-    }
-
-    .not_possible {
-        fill: rgb(200,200,200);
-    }
-
-    .possible {
-        fill: #EC888C;
-    }
-
-    .selected {
-        fill: steelblue;
-    } */
-/* 
-    #distributionView {
-        position: absolute;
-        top: 0px;
-        left: 0px;
-        width: 400px;
-        height: 150px;
-        background-color: #EEEEEE;
-        opacity: 1.0;
-        border: 1px solid #b3aeae;
-        z-index: 10000;
-    }
-
-    path {
+    #detail_view .demand_line {
         fill: none;
-        stroke: steelblue;
-        stroke-width: 2;
-    } */
-
-    /* .axis path, .axis line {
-        fill: none;
-        shape-rendering: crispEdges;
-        stroke: #BBB;
-        stroke-width: 1;
+        /* stroke: #636363; */
+        stroke-width: 2px;
+        /* opacity: 0.5; */
     }
 
-    .axis text {
-        fill: #766;
-        font-family: 'PT Sans Narrow', sans-serif;
-        font-size: 12px;
-    } */
+    #detail_view .axis line {
+        stroke: #969696;
+    }
+
+    #detail_view .axis path {
+        stroke: #969696;
+    }
+
+    #detail_view .axis text {
+        fill: #969696;
+        font-size: 10px;
+    }
 </style>
+
