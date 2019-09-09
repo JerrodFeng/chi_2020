@@ -26,7 +26,7 @@ def _lineChart(video_name):
     return json.dumps(result)
 
 
-# http://localhost:14004/initialization/BabyFace1_S01E01
+# http://localhost:14005/initialization/BabyFace1_S01E01
 @app.route('/initialization/<video_name>')
 def _initialization(video_name):
     result = dataService.initialization(video_name)

@@ -1,10 +1,15 @@
-
-<template src='./ProductView.html'></template>
+<template>
+    <div id="ProductView" class='border'>
+        <div id='product_view_svg_div'>
+            <svg id = 'product_view_svg'></svg>
+        </div>
+    </div>
+</template>
 
 <script>
 /* global d3 */
-// import DrawPeople from './drawPeople.js'
 import dataService from '../../service/dataService'
+
 export default {
     name: 'ProductView',
     components: {
@@ -15,24 +20,26 @@ export default {
     },
     data() {
         return {
-            arcData: [],
-            sortedArcData: [],
-            lassoedData: [],
-            modelInformation: []
+            productData: [],
+            modelInformation: [],
+            selectedItem: null,
+            product201807Border: null,
+            productBefore201807Border: null
         }
     },
     watch: {
-        arcData(newValue, oldValue) {
-            // this.sortedArcData = newData.sort(.....)
-            this.fetchArcData(newValue)
-        },
         lassoedDataFromSimilarityView(newValue, oldValue) {
             // this.printLassoedData(newValue)
             dataService.fetchLassoedDataFromSimilarityViewPost(newValue, (returnedData) => {
                 // 画glyph 将来把这个函数天蝎了
                 console.log('ProductView::returnedData: ', returnedData)
+                this.productData = returnedData.lassoedDataInformation
                 this.modelInformation = returnedData.modelInformation
             })
+        },
+
+        productData: function(newValue, oldValue) {
+            console.log('ProductView::productData: ', newValue)
         },
 
         modelInformation: function(newValue, oldValue) {
@@ -41,7 +48,43 @@ export default {
 
         topKModels: function(newValue, oldValue) {
             console.log('ProductView::topKModels change to: ', newValue)
+            this.selectedItem = null
 
+            this.drawProductView()
+        },
+
+        selectedItem: function(newValue, oldValue) {
+            console.log('ProductView::selectedItem change to: ', newValue)
+            if (newValue !== null) {
+                this.product201807Border.style('opacity', function(dd) {
+                    if (dd.item === newValue.item && dd.endPeriod === newValue.endPeriod) {
+                        return 1.0
+                    }
+                    return 0.0
+                })
+                this.productBefore201807Border.style('opacity', function(dd) {
+                    if (dd.item === newValue.item && dd.endPeriod === newValue.endPeriod) {
+                        return 1.0
+                    }
+                    return 0.0
+                })
+            }
+        }
+    },
+    methods: {
+        drawProductView: function() {
+            let myThis = this
+            let productData201807 = this.productData.filter(function(d, i) {
+                return d.endPeriod === 201807
+            })
+            console.log('ProductView::productData201807: ', productData201807)
+            let productDataBefore201807 = this.productData.filter(function(d, i) {
+                return d.endPeriod !== 201807
+            })
+            console.log('ProductView::productDataBefore201807: ', productDataBefore201807)
+            let topKModels = this.topKModels
+
+            // colors for top k models
             let z = d3.scaleOrdinal()
                     .range([
                         '#fbb4ae', // red
@@ -50,34 +93,389 @@ export default {
                         '#decbe4', // purple
                         '#fed9a6' // orange
                     ])
-            z.domain(newValue)
-        }
-        // lassoedData: function(newValue, oldValue) {
-        //     let lassoedData = this.lassoedDataFromOverview
-        //     console.log('productview::lassoedData', lassoedData)
-        //     return lassoedData
-        // }
+            z.domain(topKModels)
 
-        // lassoedData(newValue, oldValue) {
-        //     dataService.fetchLassoedDataPost(newValue, (returnedData) => {
-        //         console.log('ProductView::fetchProductViewLassoedData: ', returnedData)
-        //         let lassoedData = this.lassoedDataFromOverview
-        //         console.log('productview::lassoedData', lassoedData)
-        //     })
-        // }
-    },
-    methods: {
-        // fetchArcData2: function(data) {
-        //     console.log('Overview::fetchArcData2: data: ', data)
-        // },
-        // printLassoedData: function (data) {
-        //     let testData = this.lassoedDataFromSimilarityView
-        //     console.log('ProductView::lassoedData from similarity view:', testData.SimilarityViewData.data)
-        // },
-        fetchArcData: function(data) {
+            let rowCapacity = 7
+
+            let productData201807RowNumber = 0
+            if (productData201807.length !== 0) {
+                productData201807RowNumber = Math.ceil(productData201807.length / rowCapacity)
+            }
+            let productDataBefore201807RowNumber = 0
+            if (productDataBefore201807.length !== 0) {
+                productDataBefore201807RowNumber = Math.ceil(productDataBefore201807.length / rowCapacity)
+            }
+
+            let productGlyphSize = 90
+            let productGlyphGap = 120
+
+            let barChartHeight = 60
+            let barChartHeightGap = 90
+
+            let margin = {top: 50, right: 80, bottom: 10, left: 10}
+            let totalWidth = 849.33
+            let totalHeight = margin.top + margin.bottom + productData201807RowNumber * barChartHeightGap + productDataBefore201807RowNumber * productGlyphGap
+            totalHeight = Math.max(487, totalHeight)
+
+            d3.select('#product_view_svg').html('')
+
+            // draw product view head
+            d3.select('#product_view_svg')
+                .append('text')
+                .attr('class', 'product_view_heading')
+                .attr('y', 16)
+                .attr('x', 0)
+                .attr('dx', 8)
+                .attr('dy', 4)
+                .attr('fill', '#212529')
+                .attr('font-family', 'sans-serif')
+                .attr('text-anchor', 'start')
+                .attr('font-size', 16)
+                .text(function (d) {
+                    // console.log(d)
+                    return 'Product View'
+                })
+
+            let svg = d3.select('#product_view_svg')
+                .attr('width', totalWidth)
+                .attr('height', totalHeight)
+                .append('g')
+                .attr('transform', 'translate(' + margin.left + ', ' + margin.top + ')')
+
+            let product201807Group = svg.append('g')
+                .selectAll('.product_201807_group')
+                .data(productData201807)
+                .enter()
+                .append('g')
+                .attr('class', 'product_201807_group')
+                .attr('transform', function(d, i) {
+                    let translateX = i % rowCapacity * productGlyphGap
+                    let translateY = Math.floor(i / rowCapacity) * barChartHeightGap
+
+                    return 'translate(' + translateX + ', ' + translateY + ')'
+                })
+
+            this.product201807Border = product201807Group.append('rect')
+                .attr('class', 'product_201807_border_rect')
+                .attr('x', -2)
+                .attr('y', -2)
+                .attr('width', productGlyphSize + 4)
+                .attr('height', barChartHeight + 4)
+                .style('fill', '#ffffff')
+                .style('stroke', '#fbb4ae')
+                .style('stroke-width', 1)
+                .style('opacity', 0.0)
+
+            let x = d3.scaleBand()
+                .range([0, productGlyphSize])
+                .padding(0.1)
+            let y = d3.scaleLinear()
+                .range([barChartHeight, 0])
+
+            x.domain(topKModels)
+            y.domain([0, 1])
+
+            let product201807Bar = product201807Group.selectAll('.product_201807_bar')
+                .data(function(d) {
+                    console.log('d: ', d)
+                    let newD = []
+                    for (let i = 0; i < topKModels.length; i++) {
+                        let currentModel = topKModels[i]
+                        let modelData = d.model
+                        let forecastedValue = -1
+                        for (let j = 0; j < modelData.length; j++) {
+                            let currentModelData = modelData[j]
+                            if (currentModelData.model === currentModel) {
+                                forecastedValue = currentModelData.predictValue
+                            }
+                        }
+
+                        newD.push({
+                            'item': d.item,
+                            'endPeriod': d.endPeriod,
+                            'model': currentModel,
+                            'predictValue': forecastedValue
+                        })
+                    }
+                    console.log('newD: ', newD)
+
+                    return newD
+                })
+                .enter()
+                .append('rect')
+                .attr('class', 'product_201807_bar')
+                .attr('x', function(d, i) {
+                    return x(d.model)
+                })
+                .attr('width', function(d, i) {
+                    return x.bandwidth()
+                })
+                .attr('y', function(d, i) {
+                    if (d.predictValue < -0.5) {
+                        return 0
+                    } else {
+                        if (d.predictValue > 1) {
+                            return y(1)
+                        } else {
+                            return y(d.predictValue)
+                        }
+                    }
+                })
+                .attr('height', function(d, i) {
+                    if (d.predictValue < -0.5) {
+                        return barChartHeight
+                    } else {
+                        if (d.predictValue > 1) {
+                            return barChartHeight - y(1)
+                        } else {
+                            return barChartHeight - y(d.predictValue)
+                        }
+                    }
+                })
+                .attr('fill', function(d, i) {
+                    if (d.predictValue < -0.5) {
+                        return '#ffffff'
+                    } else {
+                        return z(d.model)
+                    }
+                })
+                .attr('stroke', function(d, i) {
+                    if (d.predictValue < -0.5) {
+                        return z(d.model)
+                    } else {
+                        return '#969696'
+                    }
+                })
+                .attr('stroke-width', function(d, i) {
+                    if (d.predictValue < -0.5) {
+                        return 1
+                    } else {
+                        if (d.predictValue > 1) {
+                            return 1
+                        } else {
+                            return 0
+                        }
+                    }
+                })
+
+            product201807Bar.on('click', function(d) {
+                myThis.selectedItem = {
+                    'item': d.item,
+                    'endPeriod': d.endPeriod
+                }
+            })
+
+            let productBefore201807Group = svg.append('g')
+                .selectAll('.product_before_201807_group')
+                .data(productDataBefore201807)
+                .enter()
+                .append('g')
+                .attr('class', 'product_before_201807_group')
+                .attr('transform', function(d, i) {
+                    let translateX = i % rowCapacity * productGlyphGap
+                    let translateY = Math.floor(i / rowCapacity) * productGlyphGap + productData201807RowNumber * barChartHeightGap
+
+                    translateX = translateX + productGlyphSize / 2
+                    translateY = translateY + productGlyphSize / 2
+
+                    return 'translate(' + translateX + ', ' + translateY + ')'
+                })
+
+            this.productBefore201807Border = productBefore201807Group.append('rect')
+                .attr('class', 'product_before_201807_border_rect')
+                .attr('x', -2 - productGlyphSize / 2)
+                .attr('y', -2 - productGlyphSize / 2)
+                .attr('width', productGlyphSize + 4)
+                .attr('height', productGlyphSize + 4)
+                .style('fill', '#ffffff')
+                .style('stroke', '#fbb4ae')
+                .style('stroke-width', 1)
+                .style('opacity', 0.0)
+
+            let varianceInnerRadius = 10
+            let varianceOuterRadius = 16
+            let accuracyMaxOuterRadius = 45
+
+            let theK = topKModels.length
+
+            // compute the max value of variance
+            let maxVariance = -10000
+            for (let i = 0; i < productDataBefore201807.length; i++) {
+                let currentModels = productDataBefore201807[i].model
+
+                for (let j = 0; j < currentModels.length; j++) {
+                    let currentModel = currentModels[j]
+                    let modelItemVar = currentModel.modelItemVar
+
+                    if (maxVariance < modelItemVar) {
+                        maxVariance = modelItemVar
+                    }
+                }
+            }
+            console.log('maxVariance: ', maxVariance)
+
+            let varianceArc = d3.arc()
+                .innerRadius(varianceInnerRadius)
+                .outerRadius(varianceOuterRadius)
+                .startAngle(function(d, i) {
+                    return (Math.PI * 2 / (theK + 1)) * (i - 1)
+                })
+                .endAngle(function(d, i) {
+                    return (Math.PI * 2 / (theK + 1)) * i
+                })
+
+            let whiteColor = d3.rgb('#FFFFFF')
+            let yellowColor = d3.rgb('#f16913') // orange
+            let computeYellowColor = d3.interpolate(whiteColor, yellowColor)
+            let linearYellowColor = d3.scaleLinear()
+                .domain([0, 1])
+                .range([0, 1])
+
+            // draw variance arc
+            productBefore201807Group.append('g')
+                .attr('class', 'product_glyph_variance_group')
+                .selectAll('path')
+                .data(function(d, i) {
+                    let result = d.model.filter(function(d, i) {
+                        return i < theK
+                    })
+
+                    // console.log('result: ', result)
+                    return result
+                })
+                .enter()
+                .append('path')
+                .attr('d', varianceArc)
+                .style('fill', function(d, i) {
+                    return computeYellowColor(linearYellowColor(d.modelItemVar / maxVariance))
+                })
+                .style('stroke', '#d9d9d9')
+                .style('stroke-width', 1)
+
+            // draw accuracy arc
+            let accuracyY = d3.scaleLinear()
+                .domain([0, 1])
+                .range([varianceOuterRadius, accuracyMaxOuterRadius])
+
+            let accuracyArc = d3.arc()
+                .innerRadius(varianceOuterRadius)
+                .outerRadius(function(d, i) {
+                    return accuracyY(d.accuracy)
+                })
+                .startAngle(function(d, i) {
+                    return (Math.PI * 2 / (theK + 1)) * (i - 1)
+                })
+                .endAngle(function(d, i) {
+                    return (Math.PI * 2 / (theK + 1)) * i
+                })
+
+            let productBefore201807Arc = productBefore201807Group.append('g')
+                .attr('class', 'product_glyph_accuracy_group')
+                .selectAll('path')
+                .data(function(d, i) {
+                    let result = d.model.filter(function(d, i) {
+                        return i < theK
+                    })
+
+                    // console.log('result: ', result)
+                    return result
+                })
+                .enter()
+                .append('path')
+                .attr('d', accuracyArc)
+                .style('fill', function(d, i) {
+                    if (topKModels.includes(d.model)) {
+                        return z(d.model)
+                    } else {
+                        return '#ffffff'
+                    }
+                })
+                .style('stroke', '#d9d9d9')
+                .style('stroke-width', 1)
+
+            productBefore201807Arc.on('click', function(d) {
+                myThis.selectedItem = {
+                    'item': d.item,
+                    'endPeriod': d.endPeriod
+                }
+            })
+
+            // draw the violin chart
+            var histoChart = d3.histogram()
+            var yScale = d3.scaleLinear()
+                .domain([0, 1])
+                .range([-varianceOuterRadius, -accuracyMaxOuterRadius])
+
+            histoChart.domain(yScale.domain())
+                .thresholds(yScale.ticks(12))
+                .value(d => d.accuracy)
+            var xScale = d3.scaleLinear()
+                .domain([0, 20])
+                .range([0, 15])
+
+            var area = d3.area()
+                .x0(function(d) {
+                    return -xScale(d.length)
+                })
+                .x1(function(d) {
+                    return xScale(d.length)
+                })
+                .y(d => yScale(d.x0))
+                .curve(d3.curveCatmullRom)
+
+            productBefore201807Group.append('g')
+                .attr('class', 'product_glyph_violin_group')
+                .selectAll('g')
+                .data(function(d, i) {
+                    let result = d.model.filter(function(d, i) {
+                        return i >= theK
+                    })
+                    return [result]
+                })
+                .enter()
+                .append('g')
+                .append('path')
+                .attr('transform', 'rotate(-90)')
+                .style('fill', '#d9d9d9')
+                .attr('d', function(d, i) {
+                    return area(histoChart(d))
+                })
+
+            // bar chart text
+            product201807Group.append('text')
+                    .attr('y', 0)
+                    .attr('x', 0)
+                    .attr('dy', -5)
+                    .attr('fill', '#212529')
+                    .attr('font-family', 'sans-serif')
+                    .attr('text-anchor', 'start')
+                    .attr('font-size', 12)
+                    .text(function (d) {
+                        // console.log(d)
+                        return d.item + ':'
+                    })
+
+            // product glyph text
+            productBefore201807Group.append('text')
+                    .attr('y', -productGlyphSize / 2)
+                    .attr('x', -productGlyphSize / 2)
+                    .attr('dy', -5)
+                    .attr('fill', '#212529')
+                    .attr('font-family', 'sans-serif')
+                    .attr('text-anchor', 'start')
+                    .attr('font-size', 12)
+                    .text(function (d) {
+                        // console.log(d)
+                        return d.item + ':'
+                    })
+        },
+
+        drawProductView2: function(data) {
             // console.log('fetch::productview', data)
             var numItem = 5
-            var svg = d3.select('#arcData_svg')
+            var svg = d3.select('#product_view_svg')
+                .append('g')
+                .attr('transform', 'translate(100, 100)')
             // let width = svg.attr('width')
             // let height = svg.attr('height')
             let innerRadius = 20
@@ -211,23 +609,29 @@ export default {
                     return area(histoChart(d))
                 })
         }
-        // fetchLassoedData: function () {
-        //     dataService.fetchLassoedDataPost((returnedData) => {
-        //         console.log('lassoedData(post): returneddata ', returnedData)
-        //         this.lassoedData = returnedData
-        //     })
-        // }
     },
     mounted: function () {
-        dataService.fetchArcData((data) => {
-            // console.log('productview::returned data: ', data)
-            var arcData = data.data
-            arcData.sort(function(x, y) {
-                return y.acc - x.acc
-            })
-            // console.log('sorted arc data', arcData)
+        this.$nextTick(() => {
+            d3.select('#product_view_svg')
+            .attr('width', 849.33)
+            .attr('height', 487)
 
-            this.arcData = arcData
+            // draw product view head
+            d3.select('#product_view_svg')
+                .append('text')
+                .attr('class', 'product_view_heading')
+                .attr('y', 16)
+                .attr('x', 0)
+                .attr('dx', 8)
+                .attr('dy', 4)
+                .attr('fill', '#212529')
+                .attr('font-family', 'sans-serif')
+                .attr('text-anchor', 'start')
+                .attr('font-size', 16)
+                .text(function (d) {
+                    // console.log(d)
+                    return 'Product View'
+                })
         })
     }
 }
@@ -240,6 +644,15 @@ export default {
         height: 494px;
         margin: 2px;
         /* padding-right: 15px; */
+    }
+
+    #ProductView #product_view_svg_div {
+        width: 849.33px;
+        height: 494px;
+        /* margin: 0; */
+        /* padding-right: 15px; */
+        overflow-y: auto;
+        overflow-x: hidden;
     }
 
     #ProductView .card {
@@ -434,5 +847,32 @@ export default {
     #ProductView .myArc {
         border: 5px solid #000;
 
+    }
+
+    # #overview_model_svg_div {
+        width: 316px;
+        height: 590px;
+        overflow-y: auto;
+        overflow-x: hidden;
+    }
+
+    /* width */
+    ::-webkit-scrollbar {
+    width: 4px;
+    }
+
+    /* Track */
+    ::-webkit-scrollbar-track {
+    background: #f1f1f1; 
+    }
+    
+    /* Handle */
+    ::-webkit-scrollbar-thumb {
+    background: #888; 
+    }
+
+    /* Handle on hover */
+    ::-webkit-scrollbar-thumb:hover {
+    background: #555; 
     }
 </style>

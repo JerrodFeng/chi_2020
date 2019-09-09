@@ -207,14 +207,14 @@ class DataService(object):
                 tmpLassoPointInfoDescendingDict['endPeriod'] = lassoPointInfoDescendingDict[0]['endPeriod']
                 for w in range(len(lassoPointInfoDescendingDict)):
                     if w == 0:                
-                        keys = ('model','accuracy', 'modelItemVar', 'predictValue', 'realValue')
+                        keys = ('model','accuracy', 'modelItemVar', 'predictValue', 'realValue', 'endPeriod', 'item')
                         tmpLassoPointInfoModel =  {k: lassoPointInfoDescendingDict[w][k] for k in keys}
                         tmpLassoPointInfoDescendingDict['model'] = [tmpLassoPointInfoModel]
                     else:
-                        keys = ('model','accuracy', 'modelItemVar', 'predictValue', 'realValue')
+                        keys = ('model','accuracy', 'modelItemVar', 'predictValue', 'realValue', 'endPeriod', 'item')
                         tmpLassoPointInfoModel =  {k: lassoPointInfoDescendingDict[w][k] for k in keys} 
-                        if w%2 ==0:
-                            tmpLassoPointInfoDescendingDict['model'].append(tmpLassoPointInfoModel)
+                        # if w%2 ==0:
+                        tmpLassoPointInfoDescendingDict['model'].append(tmpLassoPointInfoModel)
                 lassoedDataSummary.append(tmpLassoPointInfoDescendingDict)    
 
                 # print(lassoPointInfoDescendingDict)
@@ -224,6 +224,7 @@ class DataService(object):
         for i in range(len(lassoedDataModelAccDict['lassoedDataModelAcc'])):
             tmpmaxModelVarianceList.append(lassoedDataModelAccDict['lassoedDataModelAcc'][i]['variance'])
         maxModelVariance = max(tmpmaxModelVarianceList)
+        print('maxModelVariance: ', maxModelVariance)
         # print('+++++',modelVariance,'++++')
         modelInfo = []
         for i in range( len(modelName)):

@@ -107,7 +107,7 @@ export default {
 
             // rank the models
             newModelInformation.forEach(function(d) {
-                d.totalWeight = weightArray[0] * d.accuracy + weightArray[1] * d.variance + weightArray[2] * d.topRank
+                d.totalWeight = weightArray[0] * d.accuracy + weightArray[1] * (1 - d.variance) + weightArray[2] * d.topRank
             })
 
             newModelInformation.sort(function(a, b) {
@@ -126,20 +126,145 @@ export default {
             this.topKModels = topKModels
 
             // draw the overview
-            let modelGap = 30
+            let modelGap = 40
+            let barWidth = 35
+            let barHeight = 12
+            let firstBarX = 105
+            let circleRadius = 11
+            let barCircleGap = 30
+            let circleX = firstBarX + barWidth + barCircleGap
+            let secondBarX = circleX + circleRadius * 2 + barCircleGap
 
             let totalWidth = 316
             let height = modelGap * newModelInformation.length
-            let margin = {top: 30, right: 10, bottom: 10, left: 10}
+            let margin = {top: 15, right: 10, bottom: 10, left: 10}
             // let width = totalWidth - margin.left - margin.right
             let totalHeight = height + margin.top + margin.bottom
 
-            // var svg =
-            d3.select('#overview_model_svg')
+            d3.select('#overview_model_svg').html('')
+            var svg = d3.select('#overview_model_svg')
                 .attr('width', totalWidth)
                 .attr('height', totalHeight)
                 .append('g')
                 .attr('transform', 'translate(' + margin.left + ', ' + margin.top + ')')
+
+            let modelGroup = svg.selectAll('.model_group')
+                .data(newModelInformation)
+                .enter()
+                .append('g')
+                .attr('class', 'model_group')
+                .attr('transform', function(d, i) {
+                    let translateX = 0
+                    let translateY = i * modelGap
+
+                    return 'translate(' + translateX + ', ' + translateY + ')'
+                })
+
+            // model text
+            modelGroup.append('g')
+                .attr('class', 'model_name')
+                .append('text')
+                .attr('y', 0)
+                .attr('x', 85)
+                .attr('dy', 9)
+                .attr('fill', '#212529')
+                .attr('font-family', 'sans-serif')
+                .attr('text-anchor', 'end')
+                .attr('font-size', 14)
+                .text(function (d) {
+                    // console.log(d)
+                    return d.modelName + ': '
+                })
+
+            let x = d3.scaleLinear().range([0, barWidth])
+                .domain([0, 1])
+            let z = d3.scaleOrdinal()
+                    .range([
+                        '#fbb4ae', // red
+                        '#b3cde3', // blue
+                        '#ccebc5', // green
+                        '#decbe4', // purple
+                        '#fed9a6' // orange
+                    ])
+            z.domain(topKModels)
+
+            // draw accuracy bar
+            modelGroup.append('g')
+                .attr('class', 'model_accuracy_rectangle')
+                .append('rect')
+                .attr('x', function(d) {
+                    return firstBarX
+                })
+                .attr('y', function(d) {
+                    return 0
+                })
+                .attr('width', function(d) {
+                    return x(d.accuracy)
+                })
+                .attr('height', function(d) {
+                    return barHeight
+                })
+                .style('fill', function(d) {
+                    if (topKModels.includes(d.modelName)) {
+                        return z(d.modelName)
+                    } else {
+                        return '#d9d9d9'
+                    }
+                })
+
+            // draw variance circle
+            let whiteColor = d3.rgb('#FFFFFF')
+            let yellowColor = d3.rgb('#f16913') // orange
+            let computeYellowColor = d3.interpolate(whiteColor, yellowColor)
+            let linearYellowColor = d3.scaleLinear()
+                .domain([0, 1])
+                .range([0, 1])
+
+            modelGroup.append('g')
+                .attr('class', 'model_variance_circle')
+                .append('circle')
+                .attr('r', function(d, i) {
+                    return circleRadius
+                })
+                .attr('cx', function(d, i) {
+                    return circleX + circleRadius
+                })
+                .attr('cy', function(d, i) {
+                    return barHeight / 2
+                })
+                .style('fill', function(d, i) {
+                    return computeYellowColor(linearYellowColor(d.variance))
+                })
+                .style('stroke', function(d, i) {
+                    return '#d9d9d9'
+                })
+                .style('stroke-width', function(d, i) {
+                    return 1
+                })
+
+            // draw top K bar
+            modelGroup.append('g')
+                .attr('class', 'model_top_k_rectangle')
+                .append('rect')
+                .attr('x', function(d) {
+                    return secondBarX
+                })
+                .attr('y', function(d) {
+                    return 0
+                })
+                .attr('width', function(d) {
+                    return x(d.topRank)
+                })
+                .attr('height', function(d) {
+                    return barHeight
+                })
+                .style('fill', function(d) {
+                    if (topKModels.includes(d.modelName)) {
+                        return z(d.modelName)
+                    } else {
+                        return '#d9d9d9'
+                    }
+                })
         },
 
         weightChanged: function() {
