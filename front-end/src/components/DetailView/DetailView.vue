@@ -142,7 +142,7 @@ export default {
                 .append('rect')
                 .attr('class', 'model_performance_rectangle')
                 .attr('x', function(d, i) {
-                    return i * barGap
+                    return barGap * d.index
                 })
                 .attr('width', function(d, i) {
                     return barWidth
@@ -192,6 +192,22 @@ export default {
 
             let demandLength = demandData[0].demand.length
 
+            let maxDemand = -10000
+            // find the max demand
+            for (let i = 0; i < demandData.length; i++) {
+                let currentDemandArray = demandData[i].demand
+                for (let j = 0; j < currentDemandArray.length; j++) {
+                    let currentDemand = currentDemandArray[j].demand
+                    if (currentDemand !== null) {
+                        if (maxDemand < currentDemand) {
+                            maxDemand = currentDemand
+                        }
+                    }
+                }
+            }
+
+            console.log('maxDemand: ', maxDemand)
+
             var svg = d3.select('#detail_view_svg')
                 .attr('width', totalWidth)
                 .attr('height', totalHeight)
@@ -231,12 +247,12 @@ export default {
                 .x(function(d) { return x(d.index) })
                 .y(function(d) { return y(d.demand) })
                 .defined(function(d) {
-                    return d.demand
+                    return d.demand !== null && d.demand > -0.5
                 })
                 // .curve(d3.curveMonotoneX)
 
             x.domain([0, demandLength])
-            y.domain([0, 1])
+            y.domain([0, maxDemand]).nice()
 
             // draw the line
             demandDataGroup.selectAll('path')
@@ -280,7 +296,7 @@ export default {
                 .attr('font-family', 'sans-serif')
                 .attr('text-anchor', 'end')
                 .attr('font-size', 10)
-                .text('accuracy')
+                .text('demand')
         }
     },
     mounted: function () {

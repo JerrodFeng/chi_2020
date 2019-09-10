@@ -357,7 +357,7 @@ class DataService(object):
         print('finish')
         return result
 
-    def getDetailViewData(self, selectedItem, topKModels):
+    def getDetailViewData2(self, selectedItem, topKModels):
         modelPerformanceData = []
         # generate the model accuracy data
         for modelIndex in range(0, len(topKModels)):
@@ -444,33 +444,215 @@ class DataService(object):
                 'topKModels': topKModels
             }
     
-    def getRiskIdentificationViewData(self, selectedItem, productDataBefore2017):
-        # generate the time series
-        timeSeriesNumber = len(productDataBefore2017) + 1
-        minTimeSeriesLength = 30
-        maxTimeSeriesLength = 43
+    def getDetailViewData(self, selectedItem, topKModels):
+        client = MongoClient('localhost', 27017)
+        # mydb = client['Dong_chi_2020']
+        self.db = client['Dong_chi_2020']
+        # selectedItem = {'endPeriod': 201806, 'item': 'item2210'}
+        # topKModels = ["GMNR", "ada", "arima", "arimax", "cat"]
+        monthArray = [201708, 201709, 201710, 201711, 201712, 201801, 201802, 201803, 201804, 201805, 201806, 201807, 201808]
+        collectionKey = {}
+        selectedItemModelPerformance = []
 
-        dataArray = []
-        for i in range(0, timeSeriesNumber):
-            currentTimeSeries = []
-            currentLength = random.randint(minTimeSeriesLength, maxTimeSeriesLength)
-            for j in range(0, currentLength):
-                currentDemand = random.randint(0, 10000) / 10000
-                currentTimeSeries.append(currentDemand)
-            print('length: ', len(currentTimeSeries))
-            itemName = ''
-            if i == 0:
-                itemName = selectedItem['item']
+        for i in range(len(topKModels)):
+            curEndPeriod = selectedItem['endPeriod']
+            curItem = selectedItem['item']
+            curModel = topKModels[i]
+            monthIndex = monthArray.index(curEndPeriod)
+            tmpModelPerformance = {}
+            tmpModelPerformance['model'] = curModel
+            tmpModelPerformance['accuracy'] = []
+            for p in range(10):      
+                tmp = {}
+        #         tmpModelPerformanceAcc = []
+                curMonth = monthArray[monthIndex-p]
+                collectionKey = {'data':[{'collection': 'collection_'+str(curMonth)}]}  
+                collection = self.db[collectionKey['data'][0]['collection']]
+                curResults= collection.find({'$and':[{'item':curItem},{'model':curModel}]})
+                if curResults.count() == 0:
+                    tmp['accuracy'] = -1
+                    tmp['model'] = curModel
+                    tmp['index'] = 9 - p
+                    tmpModelPerformance['accuracy'].append(tmp)
+                else:
+                    for curResult in curResults:
+                        # print(curResult)
+                        if p ==0 and selectedItem['endPeriod']==201807:
+                            tmp['accuracy'] = -1
+                        else:
+                            tmp['accuracy'] = curResult['accuracy']
+                        tmp['model'] = curModel
+                        tmp['index'] = 9 - p
+                        tmpModelPerformance['accuracy'].append(tmp)
+            selectedItemModelPerformance.append(tmpModelPerformance)
+            
+
+        curEndPeriod = selectedItem['endPeriod']
+        curItem = selectedItem['item']
+        monthArray = [201708, 201709, 201710, 201711, 201712, 201801, 201802, 201803, 201804, 201805, 201806, 201807, 201808]
+        selectedModelDemandData = []
+        realDemand = {}
+        realDemand['type'] = 'real'
+        realDemand['demand'] = []
+        collection = self.db['originalDataDict']
+        demandResults = collection.find({'$and':[{'item':curItem},{ 'period_id' : {'$lt': (curEndPeriod + 2)}}]}).sort('period_id')
+        tmpDemand = []
+        numDemandResults = demandResults.count()
+        numIndex = 0
+        for demandResult in demandResults:
+            tmp = {}
+            tmp['index'] = numIndex
+            tmp['type'] = 'real'
+            if curEndPeriod == 201807 and demandResult['period_id'] == 201808:
+                tmp['demand'] = None
             else:
-                itemName = productDataBefore2017[i - 1]['item']
-            dataArray.append({
-                'historical_demand': currentTimeSeries,
-                'item': itemName,
-                'end_period': random.randint(201805, 201806)
-            })
+                tmp['demand'] = demandResult['qty']
+            
+            realDemand['demand'].append(tmp)
+            numIndex = numIndex + 1
+        selectedModelDemandData.append(realDemand)
+
+        for i in range(len(topKModels)):
+            tmpModelDemand = {}
+            curModel = topKModels[i]
+            tmpModelDemand['type'] = curModel
+            tmpModelDemand['demand'] = []
+            monthIndex = monthArray.index(curEndPeriod)
+            newNumIndex = numIndex - 1
+            for p in range(10):
+                curMonth = monthArray[monthIndex-p]
+                collectionKey = {'data':[{'collection': 'collection_'+str(curMonth)}]}  
+                collection = self.db[collectionKey['data'][0]['collection']]   
+                # print('curItem:', '--' + curItem + '--')
+                # print('model:', '--' + curModel + '--')
+                # demandResults = collection.find({'$and':[{'item':curItem},{'model':curModel}]}).sort('period_id', -1)
+                demandResults = collection.find({'$and':[{'item':curItem},{'model':curModel}]})
+                demandResults = demandResults.sort('period_id', -1)
+                if demandResults.count() == 0:
+                    tmp = {}
+                    tmp['demand'] = None
+                    tmp['type'] = curModel
+                    tmp['index'] = newNumIndex
+                    tmpModelDemand['demand'].append(tmp)
+                    newNumIndex = newNumIndex -1
+                else:
+                    for demandResult in demandResults:
+                        # print('\ndemandResult:', demandResult)
+                        tmp = {}
+                        tmp['index'] = newNumIndex
+                        tmp['type'] = curModel
+                        tmp['demand'] = demandResult['predictValue']   
+                        tmpModelDemand['demand'].append(tmp)
+                        newNumIndex = newNumIndex -1
+            newIndex = newNumIndex
+            for q in range(newNumIndex):
+                tmp = {}
+                tmp['index'] = newIndex
+                tmp['type'] = curModel
+                tmp['demand'] = None
+                tmpModelDemand['demand'].append(tmp)
+                newIndex = newIndex-1
+            selectedModelDemandData.append(tmpModelDemand)
+                
+        # print( selectedModelDemandData)    
+        # print('finish')
+
+        return {
+            'modelPerformanceData' : selectedItemModelPerformance, 
+            'demandData': selectedModelDemandData,
+            'selectedItem': selectedItem,
+            'topKModels': topKModels
+        }
+
+    #  计算欧拉距离
+    def distance(self, length, vector1,vector2):
+        d=0
+        for index, a, b in zip(range(length), vector1, vector2):
+            d+=((a-b)**2)  
+        return d**0.5
+
+    def getRiskIdentificationViewData(self, selectedItem, productDataBefore2017):
+        # # generate the time series
+        # timeSeriesNumber = len(productDataBefore2017) + 1
+        # minTimeSeriesLength = 30
+        # maxTimeSeriesLength = 43
+
+        # dataArray = []
+        # for i in range(0, timeSeriesNumber):
+        #     currentTimeSeries = []
+        #     currentLength = random.randint(minTimeSeriesLength, maxTimeSeriesLength)
+        #     for j in range(0, currentLength):
+        #         currentDemand = random.randint(0, 10000) / 10000
+        #         currentTimeSeries.append(currentDemand)
+        #     print('length: ', len(currentTimeSeries))
+        #     itemName = ''
+        #     if i == 0:
+        #         itemName = selectedItem['item']
+        #     else:
+        #         itemName = productDataBefore2017[(len(productDataBefore2017) - 1) - (i - 1)]['item']
+        #     dataArray.append({
+        #         'historical_demand': currentTimeSeries,
+        #         'item': itemName,
+        #         'end_period': random.randint(201805, 201806)
+        #     })
 
         # with open('RiskIdentificationView_data_20190910_002959.json', 'w') as outFile:
         #     json.dump({'data': dataArray}, outFile)
+
+        curEndperiod = selectedItem['endPeriod']
+        curItem = selectedItem['item']
+        hisDemand = []
+        collection = self.db['originalDataDict']
+        selectedResults = collection.find({'$and':[{'item': curItem}, {'period_id':{'$lt': (curEndperiod +1)}}]}).sort('period_id')
+        for selectedResult in selectedResults:
+            hisDemand.append(selectedResult['qty'])
+        # print(hisDemand)
+        selectedItemData = {}
+        selectedItemData['item'] = curItem
+        selectedItemData['end_period'] = curEndperiod
+        selectedItemData['historical_demand'] = hisDemand
+
+        # print(selectedItemData)
+        tmpProductDataBefore = []
+        for i in range(len(productDataBefore2017)):
+            curTmpItem = productDataBefore2017[i]['item']
+            curTmpEndPeriod = productDataBefore2017[i]['endPeriod']
+            selectedResults = collection.find({'$and':[{'item': curTmpItem}, {'period_id':{'$lt': (curTmpEndPeriod +1)}}]}).sort('period_id')
+            tmpHisDemand = []
+            for selectedResult in selectedResults:
+                tmpHisDemand.append(selectedResult['qty'])
+            tmpItemData = {}
+            tmpItemData['item'] = curTmpItem
+            tmpItemData['end_period'] = curTmpEndPeriod
+            tmpItemData['historical_demand'] = tmpHisDemand
+            tmpProductDataBefore.append(tmpItemData)
+
+        # print(tmpProductDataBefore)
+
+
+        for i in range(len(tmpProductDataBefore)):
+            tmpSeries = tmpProductDataBefore[i]['historical_demand']
+            
+            tmpLength = min(len(tmpSeries), len(selectedItemData['historical_demand']))
+            vector1 = tmpSeries[-tmpLength :]
+            vector2 = selectedItemData['historical_demand'][-tmpLength :]
+            tmpSimilarity = self.distance(tmpLength, vector1,vector2)
+            tmpProductDataBefore[i]['similarity'] = tmpSimilarity
+        newTmpProductDataBefore = sorted(tmpProductDataBefore,key=lambda keys:keys['similarity'])
+        # print('---', newTmpProductDataBefore)
+
+        returnedData = []
+        returnedData.append(selectedItemData)
+        for i in range(len(newTmpProductDataBefore)):
+            returnedData.append(newTmpProductDataBefore[i])
+
+        dataArray = returnedData
+
+        # compute dictionary
+        itemDictionaryRankedBySimilarity = {}
+        for i in range(1, len(dataArray)):
+            currentData = dataArray[i]
+            itemDictionaryRankedBySimilarity[currentData['item'] + '_' + str(currentData['end_period'])] = i - 1
 
         # data processing
         for i in range(0, len(dataArray)):
@@ -485,37 +667,46 @@ class DataService(object):
             print('currentHistoricalDemand: ', currentHistoricalDemand)
             print('currentHistoricalDemand length: ', len(currentHistoricalDemand))
 
-            decomposeResult = seasonal_decompose(currentHistoricalDemand, model='additive', freq=12)
+            freqForDecomposeResult = 12
+            if len(currentHistoricalDemand) < 13:
+                freqForDecomposeResult = len(currentHistoricalDemand) - 1
+            decomposeResult = seasonal_decompose(currentHistoricalDemand, model='additive', freq=freqForDecomposeResult)
         #     decomposeResult.plot()
         #     plt.show()
 
             trend = decomposeResult.trend
             # seasonal
-            seasonal = decomposeResult.seasonal.tolist()
+            # seasonal = decomposeResult.seasonal.tolist()
+            seasonal = decomposeResult.seasonal
+            seasonal[np.isnan(seasonal)] = 100
+            seasonal = [None if x > 99 else x for x in seasonal]
 
             trend[np.isnan(trend)] = 100
             # trend
             trend = [None if x > 99 else x for x in trend]
-            print('trend: ', trend)
-            print('trend length: ', len(trend))
-            print('seasonal: ', seasonal)
-            print('seasonal length: ', len(seasonal))
+            # print('trend: ', trend)
+            # print('trend length: ', len(trend))
+            # print('seasonal: ', seasonal)
+            # print('seasonal length: ', len(seasonal))
 
             acfResult = acf(np.array(currentHistoricalDemand), nlags=len(currentHistoricalDemand) - 1, alpha=0.05)
         #     print('acfResult: ', acfResult)
 
             # acf data
             acfData = acfResult[0].tolist()
-            print('acfData: ', acfData)
-            print('acfData length: ', len(acfData))
+            # print('acfData: ', acfData)
+            # print('acfData length: ', len(acfData))
             # acf confidence intervals
             acfConfidenceIntervals = acfResult[1].tolist()
-            print('acfConfidenceIntervals: ', acfConfidenceIntervals)
-            print('acfConfidenceIntervals length: ', len(acfConfidenceIntervals))
+            # print('acfConfidenceIntervals: ', acfConfidenceIntervals)
+            # print('acfConfidenceIntervals length: ', len(acfConfidenceIntervals))
 
             # adf test p-value
-            adfResult = adfuller(currentHistoricalDemand)
-            print('adfResult (p-value): ', adfResult[1])
+            tempCurrenteHistoricalDemand = currentHistoricalDemand[:]
+            while len(tempCurrenteHistoricalDemand) < 9:
+                tempCurrenteHistoricalDemand.append(0)
+            adfResult = adfuller(tempCurrenteHistoricalDemand)
+            # print('adfResult (p-value): ', adfResult[1])
 
             # enlarge the data:
             # 1. currentHistoricalDemand
@@ -526,7 +717,7 @@ class DataService(object):
             # 6. adf test p-value
             finalTimeSeriesLength = 43
             needLength = finalTimeSeriesLength - len(currentHistoricalDemand)
-            print('needLength: ', needLength)
+            # print('needLength: ', needLength)
 
             # 1. historical demand
             currentDataObject['new_historical_demand'] = []
@@ -621,48 +812,41 @@ class DataService(object):
 
             # 6. adf test p-value
             currentDataObject['adf_test_p_value'] = adfResult[1]
-            print('currentDataObject[\'adf_test_p_value\']: ', currentDataObject['adf_test_p_value'])
+            # print('currentDataObject[\'adf_test_p_value\']: ', currentDataObject['adf_test_p_value'])
 
-        # generate the top k model data
-        k = 5
-        topKModelData = []
-        models = []
-        for modelIndex in range(0, k):
-            currentModel = {}
-            modelName = 'model ' + str(modelIndex + 1)
-            models.append(modelName)
-            currentModel['model_name'] = modelName
-            currentModel['accuracy'] = []
-            currentModel['variance'] = []
-            for itemIndex in range(0, timeSeriesNumber - 1):
-                currentAccuracy = {}
-                currentAccuracy['model_name'] = modelName
-                currentAccuracy['index'] = itemIndex
-                currentVariance = {}
-                currentVariance['model_name'] = modelName
-                currentVariance['index'] = itemIndex
-
-                isAnormal = random.randint(0, 30) > 25
-                if not isAnormal:
-                    currentAccuracy['accuracy'] = random.randint(50, 100) / 100
-                    currentVariance['variance'] = random.randint(0, 300) / 100
-                else:
-                    currentAccuracy['accuracy'] = -1
-                    currentVariance['variance'] = -1
-
-                currentModel['accuracy'].append(currentAccuracy)
-                currentModel['variance'].append(currentVariance)
-
-            topKModelData.append(currentModel)
-
-        return {
+        result = {
             'data': dataArray,
-            'topKModelData': topKModelData,
             'selectedItem': selectedItem,
             'productDataBefore2017': productDataBefore2017,
+            'itemDictionaryRankedBySimilarity': itemDictionaryRankedBySimilarity,
             'who': 'I\'m the back-end of function getRiskIdentificationViewData()'
-        }
+            }
 
+        with open('RiskIdentificationView_data_20190910_204059.json', 'w') as outFile:
+            json.dump(result, outFile)
+
+        return result
+
+    def getItemCategoryDictionary(self):
+        df = pd.read_excel(os.path.join(os.path.dirname(__file__), '../data/D1_item_description.xlsx'), sheetname='Sheet1')
+
+        df = df.dropna()
+
+        categoryArray = df.description_abbr.unique().tolist()
+
+        categoryEncodeDictionary = {}
+        for i in range(0, len(categoryArray)):
+            categoryEncodeDictionary[categoryArray[i]] = 'type' + str(i + 1)
+
+        itemCategoryDictionary = {}
+        for index , row in df.iterrows():
+        #     print(row['item_id'], row['description_abbr'])
+            itemCategoryDictionary[row['item_id']] = categoryEncodeDictionary[row['description_abbr']]        
+
+        return {
+            'itemCategoryDictionary': itemCategoryDictionary,
+            'who': 'I\'m the back-end of function getItemCategoryDictionary()'
+        }
 
 if __name__ == '__main__':
     print('start')

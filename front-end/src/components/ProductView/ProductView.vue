@@ -16,7 +16,8 @@ export default {
     },
     props: {
         lassoedDataFromSimilarityView: Object,
-        topKModels: Array
+        topKModels: Array,
+        itemCategoryDictionary: Object
     },
     data() {
         return {
@@ -24,7 +25,8 @@ export default {
             modelInformation: [],
             selectedItem: null,
             product201807Border: null,
-            productBefore201807Border: null
+            productBefore201807Border: null,
+            maxModelVariance: 1.0
         }
     },
     watch: {
@@ -33,9 +35,14 @@ export default {
             dataService.fetchLassoedDataFromSimilarityViewPost(newValue, (returnedData) => {
                 // 画glyph 将来把这个函数天蝎了
                 console.log('ProductView::returnedData: ', returnedData)
+                this.maxModelVariance = returnedData.maxModelVariance
                 this.productData = returnedData.lassoedDataInformation
                 this.modelInformation = returnedData.modelInformation
             })
+        },
+
+        maxModelVariance: function(newValue, oldValue) {
+            this.$emit('changeMaxModelVariance', newValue)
         },
 
         productData: function(newValue, oldValue) {
@@ -455,7 +462,12 @@ export default {
                     .attr('font-size', 12)
                     .text(function (d) {
                         // console.log(d)
-                        return d.item + ':'
+                        let item = d.item
+                        let category = 'other'
+                        if (item in myThis.itemCategoryDictionary) {
+                            category = myThis.itemCategoryDictionary[item]
+                        }
+                        return d.item + ' (' + category + '):'
                     })
 
             // product glyph text
@@ -469,7 +481,12 @@ export default {
                     .attr('font-size', 12)
                     .text(function (d) {
                         // console.log(d)
-                        return d.item + ':'
+                        let item = d.item
+                        let category = 'other'
+                        if (item in myThis.itemCategoryDictionary) {
+                            category = myThis.itemCategoryDictionary[item]
+                        }
+                        return d.item + ' (' + category + '):'
                     })
         },
 

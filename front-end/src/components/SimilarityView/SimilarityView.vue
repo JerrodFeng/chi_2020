@@ -18,13 +18,15 @@ export default {
     components: {
     },
     props: {
-        message: String
+        message: String,
+        itemToBeDeleted: Object
     },
     data() {
         return {
             message2: [],
             lassoedData: [],
-            lassoedDataFromSimilarityView: []
+            lassoedDataFromSimilarityView: [],
+            allTheDots: null
         }
     },
     watch: {
@@ -37,12 +39,35 @@ export default {
             this.drawMDSLasso(newValue)
         },
         lassoedData(newValue, oldValue) {
-            console.log('SimilarityView::lassoedData changed!')
+            console.log('SimilarityView::lassoedData change to: ', newValue)
             dataService.fetchLassoedDataPost(newValue, (returnedData) => {
                 console.log('SimilarityView::fetchProductViewLassoedDataPost: ', returnedData)
 
                 this.lassoedDataFromSimilarityView = {'SimilarityViewData': returnedData}
                 this.$emit('changeLassoedDataFromSimilarityView', this.lassoedDataFromSimilarityView)
+            })
+        },
+
+        itemToBeDeleted: function(newValue, oldValue) {
+            console.log('SimilarityView::itemToBeDeleted change to: ', newValue)
+            this.lassoedData = this.lassoedData.filter(function (d, i) {
+                return !((d.item === newValue.item) && (d.endPeriod === newValue.endPeriod))
+            })
+
+            this.allTheDots.attr('r', function(d, i) {
+                console.log('allTheDotsData: ', d)
+                if ((d.item === newValue.item) && (d.endPeriod === newValue.endPeriod)) {
+                    return 1.5
+                } else {
+                    return d3.select(this).attr('r')
+                }
+            })
+            .style('opacity', function(d, i) {
+                if ((d.item === newValue.item) && (d.endPeriod === newValue.endPeriod)) {
+                    return 0.4
+                } else {
+                    return d3.select(this).style('opacity')
+                }
             })
         }
     },
@@ -105,6 +130,8 @@ export default {
                         return '#bebada'
                     }
                 })
+
+            this.allTheDots = dots
 
             scatterMDS.append('text')
                 .attr('class', 'similarity_view_heading')

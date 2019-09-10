@@ -105,6 +105,15 @@ function getRiskIdentificationViewData(selectedItem, productDataBefore2017, call
     })
 }
 
+function getItemCategoryDictionary(callback) {
+    const url = `${dataServerUrl}/getItemCategoryDictionary`
+    $http.get(url).then(response => {
+        callback(response.data)
+    }, errResponse => {
+        console.log(errResponse)
+    })
+}
+
 export default {
     test,
     initialization,
@@ -115,5 +124,6 @@ export default {
     fetchLassoedDataPost,
     fetchLassoedDataFromSimilarityViewPost,
     getDetailViewData,
-    getRiskIdentificationViewData
+    getRiskIdentificationViewData,
+    getItemCategoryDictionary
 }

@@ -5,7 +5,7 @@
         <!-- select the month forecasted -->
         <div id='overview_select_start_month'>
             Forecast: 
-            <input type='month' name='start_month' id='overview_start_month' value='2018-07'>
+            <input type='month' name='start_month' id='overview_start_month' value='2018-08'>
         </div>
         <!-- sliders for parameters -->
         <div id='overview_parameter_head'>
@@ -48,7 +48,8 @@ export default {
     components: {
     },
     props: {
-        modelInformation: Array
+        modelInformation: Array,
+        maxModelVariance: Number
     },
     data: function() {
         return {
@@ -448,7 +449,7 @@ export default {
     #ControlPanel #overview_start_month {
         margin-left: 6px;
         margin-top: 4px;
-        width: 140px;
+        width: 160px;
         border-radius: 5px;
         outline: none;
         border: 1px solid #ccc;

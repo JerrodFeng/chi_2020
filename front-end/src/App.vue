@@ -8,6 +8,7 @@
                           @listenToChildEvent='showMsgFromChild'
                           @changeTopKModels='changeTopKModels'
                           :modelInformation='modelInformation'
+                          :maxModelVariance='maxModelVariance'
                         ></ControlPanel>
                         <!-- <View001></View001> -->
                     </div>                   
@@ -17,7 +18,8 @@
                         <div class='col-4'>
                             <div class='row'>
                                 <SimilarityView 
-                                  :message='message' 
+                                  :message='message'
+                                  :itemToBeDeleted='itemToBeDeleted'
                                   @listenToChildEvent='showMsgFromChild'
                                   @changeLassoedDataFromSimilarityView='changeLassoedDataFromSimilarityView'
                                 ></SimilarityView>
@@ -28,10 +30,12 @@
                                 <ProductView
                                   :lassoedDataFromSimilarityView='lassoedDataFromSimilarityView'
                                   :topKModels='topKModels'
+                                  :itemCategoryDictionary='itemCategoryDictionary'
                                   @changeLassoedDataFromSimilarityView='changeLassoedDataFromSimilarityView'
                                   @changeModelInformation='changeModelInformation'
                                   @changeSelectedItem='changeSelectedItem'
                                   @changeProductData='changeProductData'
+                                  @changeMaxModelVariance='changeMaxModelVariance'
                                 ></ProductView>
                             </div>                           
                         </div>                        
@@ -51,6 +55,8 @@
                                   :topKModels='topKModels'
                                   :selectedItem='selectedItem'
                                   :productData='productData'
+                                  :itemCategoryDictionary='itemCategoryDictionary'
+                                  @changeItemToBeDeleted='changeItemToBeDeleted'
                                 ></RiskIdentificationView>
                             </div>        
                         </div>
@@ -65,7 +71,7 @@
     import 'bootstrap/dist/js/bootstrap.min.js'
     import 'video.js/dist/video-js.min.css'
 
-    // import dataService from './service/dataService'
+    import dataService from './service/dataService'
 
     import ControlPanel from './components/ControlPanel/ControlPanel.vue'
     import SimilarityView from './components/SimilarityView/SimilarityView.vue'
@@ -89,7 +95,19 @@
                 modelInformation: [],
                 topKModels: [],
                 selectedItem: null,
-                productData: []
+                productData: [],
+                itemCategoryDictionary: {},
+                maxModelVariance: 1.0,
+                itemToBeDeleted: null
+            }
+        },
+        watch: {
+            itemCategoryDictionary: function(newValue, oldValue) {
+                console.log('App::itemCategoryDictionary change to: ', newValue)
+            },
+
+            itemToBeDeleted: function(newValue, oldValue) {
+                console.log('App::itemToBeDeleted change to: ', newValue)
             }
         },
         methods: {
@@ -116,14 +134,23 @@
 
             changeProductData: function(newProductData) {
                 this.productData = newProductData
+            },
+
+            changeMaxModelVariance: function(newMaxModelVariance) {
+                this.maxModelVariance = newMaxModelVariance
+            },
+
+            changeItemToBeDeleted: function(newValue) {
+                this.itemToBeDeleted = newValue
             }
         },
         mounted: function () {
-            // this.$nextTick(() => {
-            //     dataService.initialization(this.videoName, (data) => {
-            //         this.peopleVideoData = data
-            //     })
-            // })
+            this.$nextTick(() => {
+                dataService.getItemCategoryDictionary((returnedData) => {
+                    console.log('App::getItemCategoryDictionary: ', returnedData)
+                    this.itemCategoryDictionary = returnedData.itemCategoryDictionary
+                })
+            })
         }
     }
 

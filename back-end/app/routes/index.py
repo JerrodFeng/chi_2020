@@ -101,6 +101,11 @@ def _getRiskIdentificationViewData():
     result = dataService.getRiskIdentificationViewData(selectedItem, productDataBefore2017)
     return json.dumps(result)
 
+@app.route('/getItemCategoryDictionary')
+def _getItemCategoryDictionary():
+    result = dataService.getItemCategoryDictionary()
+    return json.dumps(result)
+
 
 if __name__ == '__main__':
     pass

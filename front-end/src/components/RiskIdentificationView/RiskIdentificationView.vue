@@ -16,12 +16,15 @@ export default {
     props: {
         topKModels: Array,
         selectedItem: Object,
-        productData: Array
+        productData: Array,
+        itemCategoryDictionary: Object
     },
     data() {
         return {
             dataArray: [],
-            topKModelData: []
+            // topKModelData: [],
+            itemDictionaryRankedBySimilarity: {},
+            itemToBeDeleted: null
         }
     },
     watch: {
@@ -65,22 +68,27 @@ export default {
             this.drawRiskIdentificationView()
         },
 
-        topKModelData: function(newValue, oldValue) {
-            console.log('RiskIdentificationView::topKModelData: ', newValue)
-        },
+        // topKModelData: function(newValue, oldValue) {
+        //     console.log('RiskIdentificationView::topKModelData: ', newValue)
+        // },
 
         productData: function(newValue, oldValue) {
             console.log('RiskIdentificationView::productData: ', newValue)
+        },
+
+        itemToBeDeleted: function(newValue, oldValue) {
+            console.log('RiskIdentificationView::itemToBeDeleted change to: ', newValue)
+            this.$emit('changeItemToBeDeleted', this.itemToBeDeleted)
         }
     },
     methods: {
         getRiskIdentificationViewData: function() {
             let productData = this.productData
-            let productDataBefore2017 = productData.filter(function(d, i) {
+            let productDataBefore201807 = productData.filter(function(d, i) {
                 return d.endPeriod !== 201807
             })
 
-            productDataBefore2017 = productDataBefore2017.map(function(d) {
+            productDataBefore201807 = productDataBefore201807.map(function(d) {
                 return {
                     'item': d.item,
                     'endPeriod': d.endPeriod
@@ -89,20 +97,24 @@ export default {
 
             let selectedItem = this.selectedItem
 
-            console.log('RiskIdentificationView::productDataBefore2017: ', productDataBefore2017)
+            console.log('RiskIdentificationView::productDataBefore201807: ', productDataBefore201807)
 
-            dataService.getRiskIdentificationViewData(selectedItem, productDataBefore2017, (returnedData) => {
+            dataService.getRiskIdentificationViewData(selectedItem, productDataBefore201807, (returnedData) => {
                 console.log('RiskIdentificationView::returnedData: ', returnedData)
-                let topKModelData = returnedData.topKModelData
-                for (let modelIndex = 0; modelIndex < topKModelData.length; modelIndex++) {
-                    let currentModel = topKModelData[modelIndex]
-                    let accuracyArray = currentModel.accuracy
-                    let varianceArray = currentModel.variance
-                    for (let cellIndex = 0; cellIndex < accuracyArray.length; cellIndex++) {
-                        varianceArray[cellIndex].accuracy = accuracyArray[cellIndex].accuracy
-                    }
-                }
-                this.topKModelData = topKModelData
+
+                this.itemDictionaryRankedBySimilarity = returnedData.itemDictionaryRankedBySimilarity
+
+                // let topKModelData = returnedData.topKModelData
+                // for (let modelIndex = 0; modelIndex < topKModelData.length; modelIndex++) {
+                //     let currentModel = topKModelData[modelIndex]
+                //     let accuracyArray = currentModel.accuracy
+                //     let varianceArray = currentModel.variance
+                //     for (let cellIndex = 0; cellIndex < accuracyArray.length; cellIndex++) {
+                //         varianceArray[cellIndex].accuracy = accuracyArray[cellIndex].accuracy
+                //     }
+                // }
+
+                // this.topKModelData = topKModelData
 
                 this.dataArray = returnedData.data
             })
@@ -111,7 +123,7 @@ export default {
         drawRiskIdentificationView: function() {
             let myThis = this
             let dataArray = this.dataArray
-            let topKModelData = this.topKModelData
+            // let topKModelData = this.topKModelData
             let timeSeriesLength = 43
 
             let totalWidth = 742.67
@@ -124,6 +136,30 @@ export default {
             let timeSeriesYGap = 55
 
             totalHeight = margin.top + dataArray.length * timeSeriesYGap
+
+            // get top K model data
+            let itemDictionaryRankedBySimilarity = this.itemDictionaryRankedBySimilarity
+            let productDataBefore201807 = this.productData.filter(function(d, i) {
+                return d.endPeriod !== 201807
+            })
+            let newProductDataBefore201807 = []
+            for (let i = 0; i < productDataBefore201807.length; i++) {
+                let newElement = Object.assign({}, productDataBefore201807[i])
+                newProductDataBefore201807.push(newElement)
+            }
+            newProductDataBefore201807.forEach(function(d, i) {
+                d.newKey = d.item + '_' + d.endPeriod
+                d.newIndex = itemDictionaryRankedBySimilarity[d.item + '_' + d.endPeriod]
+            })
+            newProductDataBefore201807.sort(function(a, b) {
+                return a.newIndex - b.newIndex
+            })
+            console.log('RiskIdentificationView::newProductDataBefore201807: ', newProductDataBefore201807)
+
+            let topKModels = this.topKModels
+            let topKModelData = getTopKModelData(newProductDataBefore201807, topKModels)
+
+            console.log('RiskIdentificationView::topKModelData: ', topKModelData)
 
             var svg = d3.select('#risk_identification_view_svg')
                 .attr('width', totalWidth)
@@ -156,7 +192,13 @@ export default {
                 .attr('font-size', 12)
                 .text(function (d) {
                     // console.log(d)
-                    return d.item + ': '
+                    // return d.item + ': '
+                    let item = d.item
+                    let category = 'other'
+                    if (item in myThis.itemCategoryDictionary) {
+                        category = myThis.itemCategoryDictionary[item]
+                    }
+                    return d.item + ' (' + category + '):'
                 })
 
             // data group delete icon
@@ -191,7 +233,8 @@ export default {
             })
 
             deleteItemIcon.on('click', function(d) {
-                myThis.deleteItem(d.item)
+                console.log(d)
+                myThis.deleteItem(d.item, d.end_period)
             })
 
             drawTrendAreaChart()
@@ -211,7 +254,7 @@ export default {
                     .x(function(d) { return x(d.index) })
                     .y(function(d) { return y(d.historical_demand) })
                     .defined(function(d) {
-                        return d.historical_demand
+                        return d.historical_demand !== null
                     })
                     .curve(d3.curveMonotoneX)
 
@@ -224,7 +267,7 @@ export default {
                 // draw the line
                 historicalDemandGroup.selectAll('path')
                     .data(function(d) {
-                        console.log('The data of path for historical demand: ', [d.new_historical_demand])
+                        // console.log('The data of path for historical demand: ', [d.new_historical_demand])
                         return [d.new_historical_demand]
                     })
                     .enter()
@@ -243,7 +286,7 @@ export default {
                 //     .x(function(d) { return x(d.index) })
                 //     .y(function(d) { return y(d.historical_demand) })
                 //     .defined(function(d) {
-                //         return d.historical_demand
+                //         return d.historical_demand !== null
                 //     })
                 //     .curve(d3.curveMonotoneX)
                 var area = d3.area()
@@ -251,7 +294,7 @@ export default {
                     .y0(timeSeriesHeight)
                     .y1(function(d) { return y(d.trend) })
                     .defined(function(d) {
-                        return d.trend
+                        return d.trend !== null
                     })
                     .curve(d3.curveMonotoneX)
 
@@ -264,7 +307,7 @@ export default {
                 // add the area
                 trendGroup.selectAll('path')
                     .data(function(d) {
-                        console.log('The data of path for trend: ', [d.trend])
+                        // console.log('The data of path for trend: ', [d.trend])
                         return [d.trend]
                     })
                     .enter()
@@ -308,7 +351,7 @@ export default {
                     .x(function(d) { return x(d.index) })
                     .y(function(d) { return y(d.seasonal) })
                     .defined(function(d) {
-                        return d.seasonal
+                        return d.seasonal !== null
                     })
                     .curve(d3.curveMonotoneX)
 
@@ -324,7 +367,7 @@ export default {
                 // draw the line
                 seasonalGroup.selectAll('path')
                     .data(function(d) {
-                        console.log('The data of path for seasonal: ', [d.seasonal])
+                        // console.log('The data of path for seasonal: ', [d.seasonal])
                         return [d.seasonal]
                     })
                     .enter()
@@ -352,7 +395,7 @@ export default {
 
                 acfDataGroup.selectAll('.bar')
                     .data(function(d) {
-                        console.log('The data of the bar chart for acf data: ', d.acf_data)
+                        // console.log('The data of the bar chart for acf data: ', d.acf_data)
                         return d.acf_data
                     })
                     .enter()
@@ -394,7 +437,7 @@ export default {
                     .x(function(d) { return x(d.index) })
                     .y(function(d) { return y(d.acf_confidence_intervals[0]) })
                     .defined(function(d) {
-                        return d.acf_confidence_intervals
+                        return d.acf_confidence_intervals !== null
                     })
                     .curve(d3.curveMonotoneX)
 
@@ -402,7 +445,7 @@ export default {
                     .x(function(d) { return x(d.index) })
                     .y(function(d) { return y(d.acf_confidence_intervals[1]) })
                     .defined(function(d) {
-                        return d.acf_confidence_intervals
+                        return d.acf_confidence_intervals !== null
                     })
                     .curve(d3.curveMonotoneX)
 
@@ -421,7 +464,7 @@ export default {
                 // draw the line
                 acfConfidenceIntervalsLowerLineGroup.selectAll('path')
                     .data(function(d) {
-                        console.log('The data of path for acf confidence intervals: ', [d.acf_confidence_intervals])
+                        // console.log('The data of path for acf confidence intervals: ', [d.acf_confidence_intervals])
                         return [d.acf_confidence_intervals]
                     })
                     .enter()
@@ -449,7 +492,7 @@ export default {
                 adfTestPValueGroup.append('rect')
                     .attr('class', 'adf_test_p_value_rect')
                     .attr('transform', function(d, i) {
-                        console.log('adf_test_p_value_rect data: ', d.adf_test_p_value)
+                        // console.log('adf_test_p_value_rect data: ', d.adf_test_p_value)
                         return 'translate(' + translateX + ', 0)'
                     })
                     .attr('x', function(d, i) {
@@ -490,7 +533,7 @@ export default {
                     let varianceArray = currentModel.variance
 
                     for (let i = 0; i < accuracyArray.length; i++) {
-                        let currentValue = accuracyArray[i].accuracy
+                        let currentValue = parseFloat(accuracyArray[i].accuracy)
 
                         if (currentValue > -0.5) {
                             if (minAccuracy > currentValue) {
@@ -525,11 +568,11 @@ export default {
 
                 let z = d3.scaleOrdinal()
                     .range([
-                        '#fb8072', // red
-                        '#80b1d3', // blue
-                        '#8dd3c7', // green
-                        '#bebada', // purple
-                        '#fdb462' // orange
+                        '#fbb4ae', // red
+                        '#b3cde3', // blue
+                        '#ccebc5', // green
+                        '#decbe4', // purple
+                        '#fed9a6' // orange
                     ])
                 z.domain(['model 1', 'model 2', 'model 3', 'model 4', 'model 5'])
 
@@ -564,7 +607,7 @@ export default {
                 // draw path
                 modelItemPerformanceGroup.selectAll('path')
                     .data(function(d) {
-                        console.log('The data of path for top k model: ', [d.accuracy])
+                        // console.log('The data of path for top k model: ', [d.accuracy])
                         return [d.accuracy]
                     })
                     .enter()
@@ -601,7 +644,7 @@ export default {
 
                 modelItemPerformanceGroup.selectAll('circle')
                     .data(function(d) {
-                        console.log('The data of circles for top k model: ', d.variance)
+                        // console.log('The data of circles for top k model: ', d.variance)
                         return d.variance
                     })
                     .enter()
@@ -641,10 +684,56 @@ export default {
                         return z(d.model_name)
                     })
             }
+
+            function getTopKModelData(productData, topKModels) {
+                let topKModelData = []
+                for (let modelIndex = 0; modelIndex < topKModels.length; modelIndex++) {
+                    let currentModel = topKModels[modelIndex]
+
+                    let currentModelData = {}
+                    currentModelData['model_name'] = currentModel
+                    currentModelData['accuracy'] = []
+
+                    // fill accuracy: model_name, index, accuracy, variance
+                    for (let productIndex = 0; productIndex < productData.length; productIndex++) {
+                        let currentProductModelData = productData[productIndex]['model']
+
+                        let currentAccuracy = -1
+                        let currentVariance = -1
+
+                        for (let i = 0; i < currentProductModelData.length; i++) {
+                            let tempData = currentProductModelData[i]
+                            if (tempData.model === currentModel) {
+                                currentAccuracy = tempData.accuracy
+                                currentVariance = tempData.modelItemVar
+                            }
+                        }
+
+                        currentModelData['accuracy'].push({
+                            'model_name': currentModel,
+                            'index': productIndex,
+                            'accuracy': currentAccuracy,
+                            'variance': currentVariance
+                        })
+                    }
+
+                    currentModelData['variance'] = currentModelData['accuracy'].slice() // each item is a cite
+
+                    topKModelData.push(currentModelData)
+                }
+
+                return topKModelData
+            }
         },
 
-        deleteItem: function(itemName) {
-            console.log('this.deleteItem: delete ', itemName)
+        deleteItem: function(item, endPeriod) {
+            console.log('delete item: ')
+            console.log('    item: ', item)
+            console.log('    endPeriod: ', endPeriod)
+            this.itemToBeDeleted = {
+                'item': item,
+                'endPeriod': endPeriod
+            }
         }
     },
     mounted: function () {
