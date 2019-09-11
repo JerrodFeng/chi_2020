@@ -82,6 +82,14 @@ export default {
             console.log('SimilarityView dataset successful')
             console.log('SimilarityView dataset::', dataset)
 
+            let tooltip = d3.select('#similarity_view_tooltip')
+                .append('div')
+                .attr('class', 'tooltip')
+                .style('position', 'absolute')
+                .style('z-index', '10')
+                .style('visibility', 'hidden')
+                .text('a simple tooltip')
+
                 // .append('svg')
 
             let margin = { top: 71.33 - 10, bottom: 30, left: 10, right: 10 }
@@ -130,6 +138,37 @@ export default {
                         return '#bebada'
                     }
                 })
+
+            dots.on('mousemove', function(d) {
+                // console.log('mousemove d: ', d)
+                tooltip.style('visibility', 'visible')
+                tooltip.transition()
+                    .duration(200)
+                    .style('opacity', 0.9)
+
+                let tooltipText = 'item: ' + d.item + '<br/>' +
+                    'forecast: ' + (d.endPeriod + 1)
+
+                tooltip.html(tooltipText)
+                    .style('left', function () {
+                        if (d3.event.pageX - 320 < 213.34) {
+                            return (d3.event.pageX - 320 + 40) + 'px'
+                        } else {
+                            return (d3.event.pageX - 320 - 160) + 'px'
+                        }
+                    })
+                    .style('top', (d3.event.pageY - 40) + 'px')
+            })
+            .on('mouseout', function(d) {
+                tooltip.transition()
+                    .duration(500)
+                    .style('opacity', 0.0)
+                    .on('end', function () {
+                        tooltip.html('')
+                            .style('left', '1500px')
+                            .style('top', '0px')
+                    })
+            })
 
             this.allTheDots = dots
 
@@ -447,4 +486,11 @@ export default {
         font-family: 'PT Sans Narrow', sans-serif;
         font-size: 12px;
     } */
+
+    #SimilarityView .tooltip {
+        background-color: #fff;
+        border: 2px solid #ccc;
+        border-radius: 8px;
+        padding: 10px;
+    }
 </style>

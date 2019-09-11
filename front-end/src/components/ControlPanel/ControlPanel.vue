@@ -48,7 +48,7 @@ export default {
     components: {
     },
     props: {
-        modelInformation: Array,
+        modelInformation: Object,
         maxModelVariance: Number
     },
     data: function() {
@@ -64,9 +64,14 @@ export default {
     watch: {
         modelInformation: function(newValue, oldValue) {
             console.log('Overview::modelInformation change to: ', newValue)
-            if (newValue.length !== 0) {
+            let tempModelInfromation = newValue.modelInformation
+            if (tempModelInfromation.length !== 0) {
                 this.drawModelList()
             }
+        },
+
+        maxModelVariance: function(newValue, oldValue) {
+            console.log('Overview::maxModelVariance change to: ', newValue)
         },
 
         accuracyWeight: function(newValue, oldValue) {
@@ -98,8 +103,8 @@ export default {
 
         drawModelList: function() {
             let newModelInformation = []
-            for (let i = 0; i < this.modelInformation.length; i++) {
-                let currentModel = this.modelInformation[i] // object
+            for (let i = 0; i < this.modelInformation.modelInformation.length; i++) {
+                let currentModel = this.modelInformation.modelInformation[i] // object
                 let newCurrentModel = Object.assign({}, currentModel)
                 newModelInformation.push(newCurrentModel)
             }
@@ -138,7 +143,7 @@ export default {
 
             let totalWidth = 316
             let height = modelGap * newModelInformation.length
-            let margin = {top: 15, right: 10, bottom: 10, left: 10}
+            let margin = {top: 15 + 30, right: 10, bottom: 10, left: 10}
             // let width = totalWidth - margin.left - margin.right
             let totalHeight = height + margin.top + margin.bottom
 
@@ -148,6 +153,9 @@ export default {
                 .attr('height', totalHeight)
                 .append('g')
                 .attr('transform', 'translate(' + margin.left + ', ' + margin.top + ')')
+
+            // draw variance legend
+            this.drawVarianceLegend()
 
             let modelGroup = svg.selectAll('.model_group')
                 .data(newModelInformation)
@@ -271,7 +279,7 @@ export default {
         weightChanged: function() {
             let weightArray = [this.accuracyWeight, this.varianceWeight, this.applicabilityWeight]
             console.log('weightArray: ', weightArray)
-            if (this.modelInformation.length !== 0) {
+            if (this.modelInformation.modelInformation.length !== 0) {
                 this.drawModelList()
             }
         },
@@ -366,6 +374,97 @@ export default {
                     myThis.topK = currentValue
                 })
             }
+        },
+
+        drawVarianceLegend: function() {
+            let legendWidth = 80
+            let legendHeight = 10
+
+            let whiteColor = d3.rgb('#FFFFFF')
+            let yellowColor = d3.rgb('#f16913')
+
+            let maxModelVariance = this.modelInformation.maxModelVariance
+
+            var gradientLegendGroup = d3.select('#overview_model_svg')
+                .append('g')
+                .attr('class', 'gradient_legend_group')
+
+            var gradientLegend = gradientLegendGroup.append('defs')
+                .append('linearGradient')
+                .attr('id', 'gradient_legend')
+                .attr('x1', '0%') // bottom
+                .attr('y1', '0%')
+                .attr('x2', '100%') // to top
+                .attr('y2', '0%')
+                .attr('spreadMethod', 'pad')
+
+            gradientLegend.append('stop')
+                .attr('offset', '0%')
+                .attr('stop-color', whiteColor)
+                .attr('stop-opacity', 1)
+
+            // gradientLegend.append('stop')
+            //     .attr('offset', '50%')
+            //     .attr('stop-color', grayColor)
+            //     .attr('stop-opacity', 1)
+
+            gradientLegend.append('stop')
+                .attr('offset', '100%')
+                .attr('stop-color', yellowColor)
+                .attr('stop-opacity', 1)
+
+            gradientLegendGroup.append('rect')
+                .attr('width', legendWidth)
+                .attr('height', legendHeight)
+                .style('fill', 'url(#gradient_legend)')
+                .attr('transform', function(d) {
+                    let tempX = 316 - 140
+                    let tempY = 10
+
+                    return 'translate(' + tempX + ', ' + tempY + ')'
+                })
+
+            gradientLegendGroup.append('text')
+                .attr('y', 10)
+                .attr('x', 316 - 140 + 85)
+                .attr('dy', 8)
+                .attr('fill', function(d, i) {
+                    // let tempColor = ['#fbb4ae', '#b3cde3', '#ccebc5', '#decbe4']
+                    // return tempColor[i]
+                    return '#000000'
+                })
+                .attr('font-family', 'sans-serif')
+                .attr('text-anchor', 'start')
+                .attr('font-size', 10)
+                .text(maxModelVariance.toFixed(4))
+
+            gradientLegendGroup.append('text')
+                .attr('y', 10)
+                .attr('x', 316 - 140 - 5)
+                .attr('dy', 8)
+                .attr('fill', function(d, i) {
+                    // let tempColor = ['#fbb4ae', '#b3cde3', '#ccebc5', '#decbe4']
+                    // return tempColor[i]
+                    return '#000000'
+                })
+                .attr('font-family', 'sans-serif')
+                .attr('text-anchor', 'end')
+                .attr('font-size', 10)
+                .text('0')
+
+            gradientLegendGroup.append('text')
+                .attr('y', 10)
+                .attr('x', 316 - 140 - 5 - 15)
+                .attr('dy', 8)
+                .attr('fill', function(d, i) {
+                    // let tempColor = ['#fbb4ae', '#b3cde3', '#ccebc5', '#decbe4']
+                    // return tempColor[i]
+                    return '#000000'
+                })
+                .attr('font-family', 'sans-serif')
+                .attr('text-anchor', 'end')
+                .attr('font-size', 10)
+                .text('variance: ')
         }
     },
     mounted: function() {
@@ -423,7 +522,7 @@ export default {
 
             this.createSlider()
 
-            console.log('modelInformation: ', this.modelInformation)
+            // console.log('modelInformation: ', this.modelInformation)
         })
     }
 }

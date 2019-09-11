@@ -51,7 +51,7 @@ export default {
         },
 
         modelInformation: function(newValue, oldValue) {
-            this.$emit('changeModelInformation', newValue)
+            this.$emit('changeModelInformation', {'modelInformation': newValue, 'maxModelVariance': this.maxModelVariance})
         },
 
         topKModels: function(newValue, oldValue) {
@@ -122,7 +122,7 @@ export default {
             let barChartHeight = 60
             let barChartHeightGap = 90
 
-            let margin = {top: 50, right: 80, bottom: 10, left: 10}
+            let margin = {top: 50 + 10, right: 80, bottom: 10, left: 10}
             let totalWidth = 849.33
             let totalHeight = margin.top + margin.bottom + productData201807RowNumber * barChartHeightGap + productDataBefore201807RowNumber * productGlyphGap
             totalHeight = Math.max(487, totalHeight)
@@ -322,7 +322,8 @@ export default {
                     }
                 }
             }
-            console.log('maxVariance: ', maxVariance)
+            console.log('ProductView::maxVariance: ', maxVariance)
+            this.drawLegend(maxVariance)
 
             let varianceArc = d3.arc()
                 .innerRadius(varianceInnerRadius)
@@ -627,6 +628,150 @@ export default {
                 .attr('d', function(d, i) {
                     // console.log('begin d: ', d)
                     return area(histoChart(d))
+                })
+        },
+
+        drawLegend: function(maxVariance) {
+            // variance legend
+            let legendWidth = 80
+            let legendHeight = 10
+            let totalWidth = 849.33
+
+            let whiteColor = d3.rgb('#FFFFFF')
+            let yellowColor = d3.rgb('#f16913')
+
+            var gradientLegendGroup = d3.select('#product_view_svg')
+                .append('g')
+                .attr('class', 'gradient_legend_group')
+
+            var gradientLegend = gradientLegendGroup.append('defs')
+                .append('linearGradient')
+                .attr('id', 'gradient_legend')
+                .attr('x1', '0%') // bottom
+                .attr('y1', '0%')
+                .attr('x2', '100%') // to top
+                .attr('y2', '0%')
+                .attr('spreadMethod', 'pad')
+
+            gradientLegend.append('stop')
+                .attr('offset', '0%')
+                .attr('stop-color', whiteColor)
+                .attr('stop-opacity', 1)
+
+            // gradientLegend.append('stop')
+            //     .attr('offset', '50%')
+            //     .attr('stop-color', grayColor)
+            //     .attr('stop-opacity', 1)
+
+            gradientLegend.append('stop')
+                .attr('offset', '100%')
+                .attr('stop-color', yellowColor)
+                .attr('stop-opacity', 1)
+
+            gradientLegendGroup.append('rect')
+                .attr('width', legendWidth)
+                .attr('height', legendHeight)
+                .style('fill', 'url(#gradient_legend)')
+                .attr('transform', function(d) {
+                    let tempX = totalWidth - 140
+                    let tempY = 10
+
+                    return 'translate(' + tempX + ', ' + tempY + ')'
+                })
+
+            gradientLegendGroup.append('text')
+                .attr('y', 10)
+                .attr('x', totalWidth - 140 + 85)
+                .attr('dy', 8)
+                .attr('fill', function(d, i) {
+                    // let tempColor = ['#fbb4ae', '#b3cde3', '#ccebc5', '#decbe4']
+                    // return tempColor[i]
+                    return '#000000'
+                })
+                .attr('font-family', 'sans-serif')
+                .attr('text-anchor', 'start')
+                .attr('font-size', 10)
+                .text(maxVariance.toFixed(4))
+
+            gradientLegendGroup.append('text')
+                .attr('y', 10)
+                .attr('x', totalWidth - 140 - 5)
+                .attr('dy', 8)
+                .attr('fill', function(d, i) {
+                    // let tempColor = ['#fbb4ae', '#b3cde3', '#ccebc5', '#decbe4']
+                    // return tempColor[i]
+                    return '#000000'
+                })
+                .attr('font-family', 'sans-serif')
+                .attr('text-anchor', 'end')
+                .attr('font-size', 10)
+                .text('0')
+
+            gradientLegendGroup.append('text')
+                .attr('y', 10)
+                .attr('x', totalWidth - 140 - 5 - 15)
+                .attr('dy', 8)
+                .attr('fill', function(d, i) {
+                    // let tempColor = ['#fbb4ae', '#b3cde3', '#ccebc5', '#decbe4']
+                    // return tempColor[i]
+                    return '#000000'
+                })
+                .attr('font-family', 'sans-serif')
+                .attr('text-anchor', 'end')
+                .attr('font-size', 10)
+                .text('variance: ')
+
+            // model legend
+            let topKModels = this.topKModels
+
+            // colors for top k models
+            let z = d3.scaleOrdinal()
+                .range([
+                    '#fbb4ae', // red
+                    '#b3cde3', // blue
+                    '#ccebc5', // green
+                    '#decbe4', // purple
+                    '#fed9a6' // orange
+                ])
+            z.domain(topKModels)
+
+            let modelLegend = d3.select('#product_view_svg').append('g')
+                .attr('class', 'model_legend_group')
+                .selectAll('.model_legend')
+                .data(topKModels)
+                .enter()
+                .append('g')
+                .attr('class', 'model_legend')
+                .attr('transform', function(d, i) {
+                    let translateX = totalWidth - 620 + i * 82
+                    let translateY = 10
+                    return 'translate(' + translateX + ', ' + translateY + ')'
+                })
+
+            modelLegend.append('rect')
+                .attr('x', 0)
+                .attr('width', 15)
+                .attr('y', (10 - 15) / 2)
+                .attr('height', 15)
+                .style('fill', function(d) {
+                    return z(d)
+                })
+
+            modelLegend.append('text')
+                .attr('y', 0)
+                .attr('x', 15 + 5)
+                .attr('dy', 8)
+                .attr('fill', function(d, i) {
+                    // let tempColor = ['#fbb4ae', '#b3cde3', '#ccebc5', '#decbe4']
+                    // return tempColor[i]
+                    return '#000000'
+                })
+                .attr('font-family', 'sans-serif')
+                .attr('text-anchor', 'start')
+                .attr('font-size', 10)
+                .text(function(d) {
+                    return d
+                    // return 'lstm_classic'
                 })
         }
     },

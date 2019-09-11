@@ -92,7 +92,7 @@
             return {
                 message: 'hello child',
                 lassoedDataFromSimilarityView: { },
-                modelInformation: [],
+                modelInformation: {},
                 topKModels: [],
                 selectedItem: null,
                 productData: [],
