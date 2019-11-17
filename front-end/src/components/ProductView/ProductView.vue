@@ -455,12 +455,12 @@ export default {
             // bar chart text
             product201807Group.append('text')
                     .attr('y', 0)
-                    .attr('x', 0)
-                    .attr('dy', -5)
+                    .attr('x', -5)
+                    .attr('dy', -6)
                     .attr('fill', '#212529')
                     .attr('font-family', 'sans-serif')
                     .attr('text-anchor', 'start')
-                    .attr('font-size', 12)
+                    .attr('font-size', 14)
                     .text(function (d) {
                         // console.log(d)
                         let item = d.item
@@ -474,12 +474,12 @@ export default {
             // product glyph text
             productBefore201807Group.append('text')
                     .attr('y', -productGlyphSize / 2)
-                    .attr('x', -productGlyphSize / 2)
-                    .attr('dy', -5)
+                    .attr('x', -productGlyphSize / 2 - 5)
+                    .attr('dy', -6)
                     .attr('fill', '#212529')
                     .attr('font-family', 'sans-serif')
                     .attr('text-anchor', 'start')
-                    .attr('font-size', 12)
+                    .attr('font-size', 14)
                     .text(function (d) {
                         // console.log(d)
                         let item = d.item
@@ -682,7 +682,7 @@ export default {
             gradientLegendGroup.append('text')
                 .attr('y', 10)
                 .attr('x', totalWidth - 140 + 85)
-                .attr('dy', 8)
+                .attr('dy', 8 + 2)
                 .attr('fill', function(d, i) {
                     // let tempColor = ['#fbb4ae', '#b3cde3', '#ccebc5', '#decbe4']
                     // return tempColor[i]
@@ -690,13 +690,13 @@ export default {
                 })
                 .attr('font-family', 'sans-serif')
                 .attr('text-anchor', 'start')
-                .attr('font-size', 10)
+                .attr('font-size', 14)
                 .text(maxVariance.toFixed(4))
 
             gradientLegendGroup.append('text')
                 .attr('y', 10)
                 .attr('x', totalWidth - 140 - 5)
-                .attr('dy', 8)
+                .attr('dy', 8 + 2)
                 .attr('fill', function(d, i) {
                     // let tempColor = ['#fbb4ae', '#b3cde3', '#ccebc5', '#decbe4']
                     // return tempColor[i]
@@ -704,13 +704,13 @@ export default {
                 })
                 .attr('font-family', 'sans-serif')
                 .attr('text-anchor', 'end')
-                .attr('font-size', 10)
+                .attr('font-size', 14)
                 .text('0')
 
             gradientLegendGroup.append('text')
                 .attr('y', 10)
                 .attr('x', totalWidth - 140 - 5 - 15)
-                .attr('dy', 8)
+                .attr('dy', 8 + 2)
                 .attr('fill', function(d, i) {
                     // let tempColor = ['#fbb4ae', '#b3cde3', '#ccebc5', '#decbe4']
                     // return tempColor[i]
@@ -718,7 +718,7 @@ export default {
                 })
                 .attr('font-family', 'sans-serif')
                 .attr('text-anchor', 'end')
-                .attr('font-size', 10)
+                .attr('font-size', 14)
                 .text('variance: ')
 
             // model legend
@@ -743,7 +743,7 @@ export default {
                 .append('g')
                 .attr('class', 'model_legend')
                 .attr('transform', function(d, i) {
-                    let translateX = totalWidth - 620 + i * 82
+                    let translateX = totalWidth - 720 + i * 100
                     let translateY = 10
                     return 'translate(' + translateX + ', ' + translateY + ')'
                 })
@@ -760,7 +760,7 @@ export default {
             modelLegend.append('text')
                 .attr('y', 0)
                 .attr('x', 15 + 5)
-                .attr('dy', 8)
+                .attr('dy', 8 + 2)
                 .attr('fill', function(d, i) {
                     // let tempColor = ['#fbb4ae', '#b3cde3', '#ccebc5', '#decbe4']
                     // return tempColor[i]
@@ -768,7 +768,7 @@ export default {
                 })
                 .attr('font-family', 'sans-serif')
                 .attr('text-anchor', 'start')
-                .attr('font-size', 10)
+                .attr('font-size', 14)
                 .text(function(d) {
                     return d
                     // return 'lstm_classic'

@@ -122,13 +122,13 @@ export default {
             modelPerformanceGroup.append('g')
                 .attr('class', 'model_name')
                 .append('text')
-                .attr('y', 6)
+                .attr('y', 7)
                 .attr('x', -10)
                 .attr('dy', barChartHeight / 2)
                 .attr('fill', '#212529')
                 .attr('font-family', 'sans-serif')
                 .attr('text-anchor', 'end')
-                .attr('font-size', 12)
+                .attr('font-size', 14)
                 .text(function (d) {
                     // console.log(d)
                     return d.model + ': '
@@ -284,7 +284,7 @@ export default {
                 .attr('fill', '#969696')
                 .attr('font-family', 'sans-serif')
                 .attr('text-anchor', 'end')
-                .attr('font-size', 10)
+                .attr('font-size', 12)
                 .text('month')
 
             // y axis caption
@@ -295,7 +295,7 @@ export default {
                 .attr('fill', '#969696')
                 .attr('font-family', 'sans-serif')
                 .attr('text-anchor', 'end')
-                .attr('font-size', 10)
+                .attr('font-size', 12)
                 .text('demand')
         }
     },

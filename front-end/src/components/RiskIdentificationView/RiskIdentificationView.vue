@@ -189,7 +189,7 @@ export default {
                 .attr('fill', '#212529')
                 .attr('font-family', 'sans-serif')
                 .attr('text-anchor', 'start')
-                .attr('font-size', 12)
+                .attr('font-size', 14)
                 .text(function (d) {
                     // console.log(d)
                     // return d.item + ': '
@@ -214,9 +214,9 @@ export default {
                 })
                 .attr('font-family', 'sans-serif')
                 .attr('text-anchor', 'end')
-                .attr('font-size', 12)
+                .attr('font-size', 14)
                 .attr('cursor', 'pointer')
-                .text('x')
+                .text('x ')
                 .style('opacity', 0.0)
 
             deleteItemIcon.on('mousemove', function(d) {

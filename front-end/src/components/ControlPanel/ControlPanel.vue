@@ -143,7 +143,7 @@ export default {
 
             let totalWidth = 316
             let height = modelGap * newModelInformation.length
-            let margin = {top: 15 + 30, right: 10, bottom: 10, left: 10}
+            let margin = {top: 15 + 30 + 15, right: 10, bottom: 10, left: 10}
             // let width = totalWidth - margin.left - margin.right
             let totalHeight = height + margin.top + margin.bottom
 
@@ -156,6 +156,7 @@ export default {
 
             // draw variance legend
             this.drawVarianceLegend()
+            this.drawModelColumnText()
 
             let modelGroup = svg.selectAll('.model_group')
                 .data(newModelInformation)
@@ -427,7 +428,7 @@ export default {
             gradientLegendGroup.append('text')
                 .attr('y', 10)
                 .attr('x', 316 - 140 + 85)
-                .attr('dy', 8)
+                .attr('dy', 8 + 2)
                 .attr('fill', function(d, i) {
                     // let tempColor = ['#fbb4ae', '#b3cde3', '#ccebc5', '#decbe4']
                     // return tempColor[i]
@@ -435,13 +436,13 @@ export default {
                 })
                 .attr('font-family', 'sans-serif')
                 .attr('text-anchor', 'start')
-                .attr('font-size', 10)
+                .attr('font-size', 14)
                 .text(maxModelVariance.toFixed(4))
 
             gradientLegendGroup.append('text')
                 .attr('y', 10)
                 .attr('x', 316 - 140 - 5)
-                .attr('dy', 8)
+                .attr('dy', 8 + 2)
                 .attr('fill', function(d, i) {
                     // let tempColor = ['#fbb4ae', '#b3cde3', '#ccebc5', '#decbe4']
                     // return tempColor[i]
@@ -449,13 +450,13 @@ export default {
                 })
                 .attr('font-family', 'sans-serif')
                 .attr('text-anchor', 'end')
-                .attr('font-size', 10)
+                .attr('font-size', 14)
                 .text('0')
 
             gradientLegendGroup.append('text')
                 .attr('y', 10)
                 .attr('x', 316 - 140 - 5 - 15)
-                .attr('dy', 8)
+                .attr('dy', 8 + 2)
                 .attr('fill', function(d, i) {
                     // let tempColor = ['#fbb4ae', '#b3cde3', '#ccebc5', '#decbe4']
                     // return tempColor[i]
@@ -463,8 +464,56 @@ export default {
                 })
                 .attr('font-family', 'sans-serif')
                 .attr('text-anchor', 'end')
-                .attr('font-size', 10)
+                .attr('font-size', 14)
                 .text('variance: ')
+        },
+
+        drawModelColumnText: function() {
+            var modelColumnTextGroup = d3.select('#overview_model_svg')
+                .append('g')
+                .attr('class', 'model_column_text_group')
+
+            modelColumnTextGroup.append('text')
+                .attr('y', 45)
+                .attr('x', 100)
+                .attr('dy', 0)
+                .attr('fill', function(d, i) {
+                    // let tempColor = ['#fbb4ae', '#b3cde3', '#ccebc5', '#decbe4']
+                    // return tempColor[i]
+                    return '#000000'
+                })
+                .attr('font-family', 'sans-serif')
+                .attr('text-anchor', 'start')
+                .attr('font-size', 14)
+                .text('accuracy')
+
+            modelColumnTextGroup.append('text')
+                .attr('y', 45)
+                .attr('x', 100 + 64)
+                .attr('dy', 0)
+                .attr('fill', function(d, i) {
+                    // let tempColor = ['#fbb4ae', '#b3cde3', '#ccebc5', '#decbe4']
+                    // return tempColor[i]
+                    return '#000000'
+                })
+                .attr('font-family', 'sans-serif')
+                .attr('text-anchor', 'start')
+                .attr('font-size', 14)
+                .text('variance')
+
+            modelColumnTextGroup.append('text')
+                .attr('y', 45)
+                .attr('x', 100 + 64 + 60)
+                .attr('dy', 0)
+                .attr('fill', function(d, i) {
+                    // let tempColor = ['#fbb4ae', '#b3cde3', '#ccebc5', '#decbe4']
+                    // return tempColor[i]
+                    return '#000000'
+                })
+                .attr('font-family', 'sans-serif')
+                .attr('text-anchor', 'start')
+                .attr('font-size', 14)
+                .text('applicability')
         }
     },
     mounted: function() {
