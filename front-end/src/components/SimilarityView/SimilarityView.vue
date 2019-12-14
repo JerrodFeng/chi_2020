@@ -187,6 +187,7 @@ export default {
                     return 'Similarity View'
                 })
 
+            drawLegend()
             // var xAxis = d3.axisBottom()
             //     .scale(xScale)
             //     .ticks(7)
@@ -265,6 +266,51 @@ export default {
                 .on('end', lassoEnd)
 
             svg.call(lasso)
+
+            function drawLegend() {
+                let legendGroup = svg.append('g')
+                    .attr('class', 'legend_group')
+
+                legendGroup.selectAll('circle')
+                    .data(['to be forecasted', 'forecasted before'])
+                    .enter()
+                    .append('circle')
+                    .attr('cx', function(d, i) {
+                        return 190 + 135 * i - 35
+                    })
+                    .attr('cy', function(d, i) {
+                        return 15
+                    })
+                    .attr('r', 5)
+                    .attr('fill', function(d, i) {
+                        if (i === 0) {
+                            return '#fb8072'
+                        } else {
+                            return '#bebada'
+                        }
+                    })
+
+                legendGroup.selectAll('text')
+                    .data(['to be forecasted', 'forecasted before'])
+                    .enter()
+                    .append('text')
+                    .attr('y', 10)
+                    .attr('x', function(d, i) {
+                        return 200 + 135 * i - 35
+                    })
+                    .attr('dy', 8 + 2)
+                    .attr('fill', function(d, i) {
+                        // let tempColor = ['#fbb4ae', '#b3cde3', '#ccebc5', '#decbe4']
+                        // return tempColor[i]
+                        return '#000000'
+                    })
+                    .attr('font-family', 'sans-serif')
+                    .attr('text-anchor', 'start')
+                    .attr('font-size', 14)
+                    .text(function(d) {
+                        return d
+                    })
+            }
         }
         // fetchLassoedData: function (){
         //     dataService.fetchLassoedDataPost(lassoedData, (returnedData) => {

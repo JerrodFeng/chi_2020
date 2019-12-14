@@ -178,6 +178,28 @@ export default {
                         return 0
                     }
                 })
+
+            // add the legend of bar chart
+            let legendGroup = d3.select('#detail_view_svg')
+                .append('g')
+                .attr('class', 'legend_group')
+
+            legendGroup.append('text')
+                .attr('y', 10)
+                .attr('x', function(d, i) {
+                    return 438
+                })
+                .attr('dy', 8 + 2 + 20)
+                .attr('fill', function(d, i) {
+                    // let tempColor = ['#fbb4ae', '#b3cde3', '#ccebc5', '#decbe4']
+                    // return tempColor[i]
+                    return '#000000'
+                })
+                .attr('fill', '#969696')
+                .attr('font-family', 'sans-serif')
+                .attr('text-anchor', 'start')
+                .attr('font-size', 12)
+                .text('accuracy')
         },
 
         drawDemandDataView: function() {

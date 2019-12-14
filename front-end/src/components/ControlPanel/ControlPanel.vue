@@ -31,7 +31,7 @@
         <div id='overview_model_svg_div'>
             <svg id='overview_model_svg'></svg>
         </div>
-        
+        <div id='control_panel_tooltip'></div>
     </div>
 </template>
 
@@ -103,6 +103,15 @@ export default {
 
         drawModelList: function() {
             let newModelInformation = []
+
+            let tooltip = d3.select('#control_panel_tooltip')
+                .append('div')
+                .attr('class', 'tooltip')
+                .style('position', 'absolute')
+                .style('z-index', '10')
+                .style('visibility', 'hidden')
+                .text('a simple tooltip')
+
             for (let i = 0; i < this.modelInformation.modelInformation.length; i++) {
                 let currentModel = this.modelInformation.modelInformation[i] // object
                 let newCurrentModel = Object.assign({}, currentModel)
@@ -199,7 +208,7 @@ export default {
             z.domain(topKModels)
 
             // draw accuracy bar
-            modelGroup.append('g')
+            let accuracyRect = modelGroup.append('g')
                 .attr('class', 'model_accuracy_rectangle')
                 .append('rect')
                 .attr('x', function(d) {
@@ -230,7 +239,7 @@ export default {
                 .domain([0, 1])
                 .range([0, 1])
 
-            modelGroup.append('g')
+            let varianceCircle = modelGroup.append('g')
                 .attr('class', 'model_variance_circle')
                 .append('circle')
                 .attr('r', function(d, i) {
@@ -253,7 +262,7 @@ export default {
                 })
 
             // draw top K bar
-            modelGroup.append('g')
+            let topKBar = modelGroup.append('g')
                 .attr('class', 'model_top_k_rectangle')
                 .append('rect')
                 .attr('x', function(d) {
@@ -275,6 +284,117 @@ export default {
                         return '#d9d9d9'
                     }
                 })
+
+            accuracyRect.on('mousemove', function(d) {
+                // console.log('mousemove d: ', d)
+                tooltip.style('visibility', 'visible')
+                tooltip.transition()
+                    .duration(200)
+                    .style('opacity', 0.9)
+
+                let tooltipText = 'model: ' + d.modelName + '<br/>' +
+                    'accuracy: ' + d.accuracy.toFixed(4) + '<br/>' +
+                    'variance: ' + d.variance.toFixed(4) + '<br/>' +
+                    'applicability: ' + d.topRank.toFixed(4) + '<br/>' +
+                    'score: ' + d.totalWeight.toFixed(4)
+
+                tooltip.html(tooltipText)
+                    .style('left', function () {
+                        return (d3.event.pageX + 20) + 'px'
+                        // if (d3.event.pageX - 320 < 213.34) {
+                        //     return (d3.event.pageX - 320 + 40) + 'px'
+                        // } else {
+                        //     return (d3.event.pageX - 320 - 160) + 'px'
+                        // }
+                    })
+                    .style('top', function () {
+                        return (d3.event.pageY - 40) + 'px'
+                    })
+            })
+            .on('mouseout', function(d) {
+                tooltip.transition()
+                    .duration(500)
+                    .style('opacity', 0.0)
+                    .on('end', function () {
+                        tooltip.html('')
+                            .style('left', '1500px')
+                            .style('top', '0px')
+                    })
+            })
+
+            varianceCircle.on('mousemove', function(d) {
+                // console.log('mousemove d: ', d)
+                tooltip.style('visibility', 'visible')
+                tooltip.transition()
+                    .duration(200)
+                    .style('opacity', 0.9)
+
+                let tooltipText = 'model: ' + d.modelName + '<br/>' +
+                    'accuracy: ' + d.accuracy.toFixed(4) + '<br/>' +
+                    'variance: ' + d.variance.toFixed(4) + '<br/>' +
+                    'applicability: ' + d.topRank.toFixed(4) + '<br/>' +
+                    'score: ' + d.totalWeight.toFixed(4)
+
+                tooltip.html(tooltipText)
+                    .style('left', function () {
+                        return (d3.event.pageX - 163) + 'px'
+                        // if (d3.event.pageX - 320 < 213.34) {
+                        //     return (d3.event.pageX - 320 + 40) + 'px'
+                        // } else {
+                        //     return (d3.event.pageX - 320 - 160) + 'px'
+                        // }
+                    })
+                    .style('top', function () {
+                        return (d3.event.pageY - 40) + 'px'
+                    })
+            })
+            .on('mouseout', function(d) {
+                tooltip.transition()
+                    .duration(500)
+                    .style('opacity', 0.0)
+                    .on('end', function () {
+                        tooltip.html('')
+                            .style('left', '1500px')
+                            .style('top', '0px')
+                    })
+            })
+
+            topKBar.on('mousemove', function(d) {
+                // console.log('mousemove d: ', d)
+                tooltip.style('visibility', 'visible')
+                tooltip.transition()
+                    .duration(200)
+                    .style('opacity', 0.9)
+
+                let tooltipText = 'model: ' + d.modelName + '<br/>' +
+                    'accuracy: ' + d.accuracy.toFixed(4) + '<br/>' +
+                    'variance: ' + d.variance.toFixed(4) + '<br/>' +
+                    'applicability: ' + d.topRank.toFixed(4) + '<br/>' +
+                    'score: ' + d.totalWeight.toFixed(4)
+
+                tooltip.html(tooltipText)
+                    .style('left', function () {
+                        return (d3.event.pageX - 163) + 'px'
+                        // if (d3.event.pageX - 320 < 213.34) {
+                        //     return (d3.event.pageX - 320 + 40) + 'px'
+                        // } else {
+                        //     return (d3.event.pageX - 320 - 160) + 'px'
+                        // }
+                    })
+                    .style('top', function () {
+                        return (d3.event.pageY - 40) + 'px'
+                    })
+            })
+            .on('mouseout', function(d) {
+                tooltip.transition()
+                    .duration(500)
+                    .style('opacity', 0.0)
+                    .on('end', function () {
+                        tooltip.html('')
+                            .style('left', '1500px')
+                            .style('top', '0px')
+                    })
+            })
         },
 
         weightChanged: function() {
@@ -669,6 +789,13 @@ export default {
         position: relative;
         /* height: 100%; */
         /* width: 100%; */
+    }
+
+    #ControlPanel .tooltip {
+        background-color: #fff;
+        border: 2px solid #ccc;
+        border-radius: 8px;
+        padding: 10px;
     }
 
     /* #videoview text {

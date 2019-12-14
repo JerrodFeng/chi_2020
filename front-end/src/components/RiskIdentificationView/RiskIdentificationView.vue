@@ -128,7 +128,7 @@ export default {
 
             let totalWidth = 742.67
             let totalHeight = 431
-            let margin = {top: 55, right: 10, bottom: 10, left: 10}
+            let margin = {top: 75, right: 10, bottom: 10, left: 10}
             // let width = totalWidth - margin.left - margin.right
             // let height = totalHeight - margin.top - margin.bottom
             let timeSeriesWidth = 244
@@ -243,6 +243,8 @@ export default {
             drawAcfBarChartWithConfidenceIntervals()
             drawAdfTestPValueRectangle()
             drawParallelCoordinatesPlot()
+
+            drawLegend()
 
             function drawHistoricalDemandLineChart() {
                 // set the ranges
@@ -402,7 +404,7 @@ export default {
                     .append('rect')
                     .attr('class', 'bar')
                     .attr('x', function(d, i) {
-                        return x(i) - barWidth
+                        return x(i) - barWidth / 2
                     })
                     .attr('y', function(d, i) {
                         let acfData = d.acf_data
@@ -723,6 +725,44 @@ export default {
                 }
 
                 return topKModelData
+            }
+
+            function drawLegend() {
+                let legendGroup = d3.select('#risk_identification_view_svg')
+                    .append('g')
+                    .attr('class', 'legend_group')
+
+                legendGroup.selectAll('.column_legend')
+                    .data([
+                        'historical demand, trend',
+                        'seasonality, autocorrelation, stationarity',
+                        'forecast accuracy, variance'
+                    ])
+                    .enter()
+                    .append('text')
+                    .attr('class', 'column_legend')
+                    .attr('y', 35)
+                    .attr('x', function(d, i) {
+                        if (i === 0) {
+                            return 130
+                        } else if (i === 1) {
+                            return 130 + 268
+                        } else {
+                            return 130 + 268 + 240
+                        }
+                    })
+                    .attr('dy', 8 + 2)
+                    .attr('fill', function(d, i) {
+                        // let tempColor = ['#fbb4ae', '#b3cde3', '#ccebc5', '#decbe4']
+                        // return tempColor[i]
+                        return '#000000'
+                    })
+                    .attr('font-family', 'sans-serif')
+                    .attr('text-anchor', 'middle')
+                    .attr('font-size', 14)
+                    .text(function(d) {
+                        return d
+                    })
             }
         },
 

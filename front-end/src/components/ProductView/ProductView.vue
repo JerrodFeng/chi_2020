@@ -1,13 +1,21 @@
 <template>
     <div id="ProductView" class='border'>
-        <div id='product_view_svg_div'>
-            <svg id = 'product_view_svg'></svg>
+        <div id="change_glyph_type_checkbox">
+            <input type="checkbox" v-model="isBarChartBased">
         </div>
+        <div id="change_glyph_type_text">
+            bar:
+        </div>
+        <!-- <div id='product_view_svg_div'> -->
+        <svg id = 'product_view_svg'></svg>
+        <!-- </div> -->
     </div>
 </template>
 
 <script>
 /* global d3 */
+import 'bootstrap/dist/css/bootstrap.min.css'
+import 'bootstrap/dist/js/bootstrap.min.js'
 import dataService from '../../service/dataService'
 
 export default {
@@ -26,7 +34,9 @@ export default {
             selectedItem: null,
             product201807Border: null,
             productBefore201807Border: null,
-            maxModelVariance: 1.0
+            maxModelVariance: 1.0,
+            glyphType: 0, // circular design: 0, bar chart based design: 1
+            isBarChartBased: false
         }
     },
     watch: {
@@ -79,6 +89,20 @@ export default {
             }
 
             this.$emit('changeSelectedItem', newValue)
+        },
+
+        glyphType: function(newValue, oldValue) {
+            this.selectedItem = null
+            this.drawProductView()
+        },
+
+        isBarChartBased: function(newValue, oldValue) {
+            console.log('ProductView::isBarChartBased change to: ', newValue)
+            if (newValue === true) {
+                this.glyphType = 1
+            } else {
+                this.glyphType = 0
+            }
         }
     },
     methods: {
@@ -325,16 +349,6 @@ export default {
             console.log('ProductView::maxVariance: ', maxVariance)
             this.drawLegend(maxVariance)
 
-            let varianceArc = d3.arc()
-                .innerRadius(varianceInnerRadius)
-                .outerRadius(varianceOuterRadius)
-                .startAngle(function(d, i) {
-                    return (Math.PI * 2 / (theK + 1)) * (i - 1)
-                })
-                .endAngle(function(d, i) {
-                    return (Math.PI * 2 / (theK + 1)) * i
-                })
-
             let whiteColor = d3.rgb('#FFFFFF')
             let yellowColor = d3.rgb('#f16913') // orange
             let computeYellowColor = d3.interpolate(whiteColor, yellowColor)
@@ -342,115 +356,301 @@ export default {
                 .domain([0, 1])
                 .range([0, 1])
 
-            // draw variance arc
-            productBefore201807Group.append('g')
-                .attr('class', 'product_glyph_variance_group')
-                .selectAll('path')
-                .data(function(d, i) {
-                    let result = d.model.filter(function(d, i) {
-                        return i < theK
+            if (this.glyphType === 0) {
+                let varianceArc = d3.arc()
+                    .innerRadius(varianceInnerRadius)
+                    .outerRadius(varianceOuterRadius)
+                    .startAngle(function(d, i) {
+                        return (Math.PI * 2 / (theK + 1)) * (i - 1)
+                    })
+                    .endAngle(function(d, i) {
+                        return (Math.PI * 2 / (theK + 1)) * i
                     })
 
-                    // console.log('result: ', result)
-                    return result
-                })
-                .enter()
-                .append('path')
-                .attr('d', varianceArc)
-                .style('fill', function(d, i) {
-                    return computeYellowColor(linearYellowColor(d.modelItemVar / maxVariance))
-                })
-                .style('stroke', '#d9d9d9')
-                .style('stroke-width', 1)
+                // draw variance arc
+                productBefore201807Group.append('g')
+                    .attr('class', 'product_glyph_variance_group')
+                    .selectAll('path')
+                    .data(function(d, i) {
+                        let result = d.model.filter(function(d, i) {
+                            return i < theK
+                        })
 
-            // draw accuracy arc
-            let accuracyY = d3.scaleLinear()
-                .domain([0, 1])
-                .range([varianceOuterRadius, accuracyMaxOuterRadius])
+                        // console.log('result: ', result)
+                        return result
+                    })
+                    .enter()
+                    .append('path')
+                    .attr('d', varianceArc)
+                    .style('fill', function(d, i) {
+                        return computeYellowColor(linearYellowColor(d.modelItemVar / maxVariance))
+                    })
+                    .style('stroke', '#d9d9d9')
+                    .style('stroke-width', 1)
 
-            let accuracyArc = d3.arc()
-                .innerRadius(varianceOuterRadius)
-                .outerRadius(function(d, i) {
-                    return accuracyY(d.accuracy)
-                })
-                .startAngle(function(d, i) {
-                    return (Math.PI * 2 / (theK + 1)) * (i - 1)
-                })
-                .endAngle(function(d, i) {
-                    return (Math.PI * 2 / (theK + 1)) * i
-                })
+                // draw accuracy arc
+                let accuracyY = d3.scaleLinear()
+                    .domain([0, 1])
+                    .range([varianceOuterRadius, accuracyMaxOuterRadius])
 
-            let productBefore201807Arc = productBefore201807Group.append('g')
-                .attr('class', 'product_glyph_accuracy_group')
-                .selectAll('path')
-                .data(function(d, i) {
-                    let result = d.model.filter(function(d, i) {
-                        return i < theK
+                let accuracyArc = d3.arc()
+                    .innerRadius(varianceOuterRadius)
+                    .outerRadius(function(d, i) {
+                        return accuracyY(d.accuracy)
+                    })
+                    .startAngle(function(d, i) {
+                        return (Math.PI * 2 / (theK + 1)) * (i - 1)
+                    })
+                    .endAngle(function(d, i) {
+                        return (Math.PI * 2 / (theK + 1)) * i
                     })
 
-                    // console.log('result: ', result)
-                    return result
-                })
-                .enter()
-                .append('path')
-                .attr('d', accuracyArc)
-                .style('fill', function(d, i) {
-                    if (topKModels.includes(d.model)) {
-                        return z(d.model)
-                    } else {
-                        return '#ffffff'
+                let productBefore201807Arc = productBefore201807Group.append('g')
+                    .attr('class', 'product_glyph_accuracy_group')
+                    .selectAll('path')
+                    .data(function(d, i) {
+                        let result = d.model.filter(function(d, i) {
+                            return i < theK
+                        })
+
+                        // console.log('result: ', result)
+                        return result
+                    })
+                    .enter()
+                    .append('path')
+                    .attr('d', accuracyArc)
+                    .style('fill', function(d, i) {
+                        if (topKModels.includes(d.model)) {
+                            return z(d.model)
+                        } else {
+                            return '#ffffff'
+                        }
+                    })
+                    .style('stroke', '#d9d9d9')
+                    .style('stroke-width', 1)
+
+                productBefore201807Arc.on('click', function(d) {
+                    myThis.selectedItem = {
+                        'item': d.item,
+                        'endPeriod': d.endPeriod
                     }
                 })
-                .style('stroke', '#d9d9d9')
-                .style('stroke-width', 1)
 
-            productBefore201807Arc.on('click', function(d) {
-                myThis.selectedItem = {
-                    'item': d.item,
-                    'endPeriod': d.endPeriod
-                }
-            })
+                // draw the violin chart
+                var histoChart = d3.histogram()
+                var yScale = d3.scaleLinear()
+                    .domain([0, 1])
+                    .range([-varianceOuterRadius, -accuracyMaxOuterRadius])
 
-            // draw the violin chart
-            var histoChart = d3.histogram()
-            var yScale = d3.scaleLinear()
-                .domain([0, 1])
-                .range([-varianceOuterRadius, -accuracyMaxOuterRadius])
+                histoChart.domain(yScale.domain())
+                    .thresholds(yScale.ticks(12))
+                    .value(d => d.accuracy)
+                var xScale = d3.scaleLinear()
+                    .domain([0, 20])
+                    .range([0, 15])
 
-            histoChart.domain(yScale.domain())
-                .thresholds(yScale.ticks(12))
-                .value(d => d.accuracy)
-            var xScale = d3.scaleLinear()
-                .domain([0, 20])
-                .range([0, 15])
-
-            var area = d3.area()
-                .x0(function(d) {
-                    return -xScale(d.length)
-                })
-                .x1(function(d) {
-                    return xScale(d.length)
-                })
-                .y(d => yScale(d.x0))
-                .curve(d3.curveCatmullRom)
-
-            productBefore201807Group.append('g')
-                .attr('class', 'product_glyph_violin_group')
-                .selectAll('g')
-                .data(function(d, i) {
-                    let result = d.model.filter(function(d, i) {
-                        return i >= theK
+                var area = d3.area()
+                    .x0(function(d) {
+                        return -xScale(d.length)
                     })
-                    return [result]
+                    .x1(function(d) {
+                        return xScale(d.length)
+                    })
+                    .y(d => yScale(d.x0))
+                    .curve(d3.curveCatmullRom)
+
+                productBefore201807Group.append('g')
+                    .attr('class', 'product_glyph_violin_group')
+                    .selectAll('g')
+                    .data(function(d, i) {
+                        let result = d.model.filter(function(d, i) {
+                            return i >= theK
+                        })
+                        return [result]
+                    })
+                    .enter()
+                    .append('g')
+                    .append('path')
+                    .attr('transform', 'rotate(-90)')
+                    .style('fill', '#d9d9d9')
+                    .attr('d', function(d, i) {
+                        return area(histoChart(d))
+                    })
+            } else { // draw bar chart based design
+                let barGlyphX = d3.scaleBand()
+                    .range([0, productGlyphSize - 15])
+                    .padding(0.15)
+                let barGlyphY = d3.scaleLinear()
+                    .range([productGlyphSize - 17, 0])
+
+                let xDomain = []
+                for (let i = 0; i < theK; i++) {
+                    xDomain.push(i)
+                }
+                barGlyphX.domain(xDomain)
+                barGlyphY.domain([0, 1])
+
+                // the part of bar chart: for accuracy
+                let barGlyphBarGroup = productBefore201807Group.append('g')
+                    .attr('class', 'bar_glyph_bar_group')
+                    .attr('transform', function(d) {
+                        let translateX = -productGlyphSize / 2
+                        let translateY = -productGlyphSize / 2
+                        return 'translate(' + translateX + ', ' + translateY + ')'
+                    })
+
+                // draw accuracy bar chart
+                let barGlyphBar = barGlyphBarGroup.selectAll('.bar_glyph_bar')
+                    .data(function(d) {
+                        console.log('productView::barGlyphBarGroupData::d:', d)
+                        let newD = []
+                        let modelData = d.model
+                        for (let i = 0; i < topKModels.length; i++) {
+                            newD.push({
+                                'item': d.item,
+                                'endPeriod': d.endPeriod,
+                                'model': modelData[i].model,
+                                'accuracy': modelData[i].accuracy,
+                                'variance': modelData[i].modelItemVar
+                            })
+                        }
+                        console.log('productView::barGlyphBarGroupData::newD:', newD)
+
+                        return newD
+                    })
+                    .enter()
+                    .append('rect')
+                    .attr('class', 'bar_glyph_bar')
+                    .attr('x', function(d, i) {
+                        // console.log('productView::barGlyph::i:', i)
+                        return barGlyphX(i)
+                    })
+                    .attr('width', function(d, i) {
+                        return barGlyphX.bandwidth()
+                    })
+                    .attr('y', function(d, i) {
+                        return barGlyphY(d.accuracy)
+                    })
+                    .attr('height', function(d, i) {
+                        return productGlyphSize - 17 - barGlyphY(d.accuracy)
+                    })
+                    .style('fill', function(d, i) {
+                        if (topKModels.includes(d.model)) {
+                            return z(d.model)
+                        } else {
+                            return '#ffffff'
+                        }
+                    })
+                    .style('stroke', function(d) {
+                        // if (topKModels.includes(d.model)) {
+                        //     return z(d.model)
+                        // } else {
+                        //     return '#d9d9d9'
+                        // }
+                        return '#d9d9d9'
+                    })
+                    .style('stroke-width', 1)
+
+                barGlyphBar.on('click', function(d) {
+                    myThis.selectedItem = {
+                        'item': d.item,
+                        'endPeriod': d.endPeriod
+                    }
                 })
-                .enter()
-                .append('g')
-                .append('path')
-                .attr('transform', 'rotate(-90)')
-                .style('fill', '#d9d9d9')
-                .attr('d', function(d, i) {
-                    return area(histoChart(d))
-                })
+
+                // draw variance rectangle
+                barGlyphBarGroup.selectAll('.bar_glyph_bar_var')
+                    .data(function(d) {
+                        // console.log('productView::barGlyphBarGroupData::d:', d)
+                        let newD = []
+                        let modelData = d.model
+                        for (let i = 0; i < topKModels.length; i++) {
+                            newD.push({
+                                'item': d.item,
+                                'endPeriod': d.endPeriod,
+                                'model': modelData[i].model,
+                                'accuracy': modelData[i].accuracy,
+                                'variance': modelData[i].modelItemVar
+                            })
+                        }
+                        // console.log('productView::barGlyphBarGroupData::newD:', newD)
+
+                        return newD
+                    })
+                    .enter()
+                    .append('rect')
+                    .attr('class', 'bar_glyph_bar_var')
+                    // .attr('transform', function(d) {
+                    //     let translateX = 0
+                    //     let translateY = 2
+                    //     return 'translate(' + translateX + ', ' + translateY + ')'
+                    // })
+                    .attr('x', function(d, i) {
+                        // console.log('productView::barGlyph::i:', i)
+                        return barGlyphX(i)
+                    })
+                    .attr('width', function(d, i) {
+                        return barGlyphX.bandwidth()
+                    })
+                    .attr('y', function(d, i) {
+                        return productGlyphSize - 15
+                    })
+                    .attr('height', function(d, i) {
+                        return 15
+                    })
+                    .style('fill', function(d, i) {
+                        return computeYellowColor(linearYellowColor(d.variance / maxVariance))
+                    })
+                    .style('stroke', '#d9d9d9')
+                    .style('stroke-width', 1)
+
+                // draw the margin density plot
+                let histoChart = d3.histogram()
+                let yScale = d3.scaleLinear()
+                    .domain([0, 1])
+                    .range([productGlyphSize - 15, 0])
+
+                histoChart.domain(yScale.domain())
+                    .thresholds(yScale.ticks(12))
+                    .value(d => d.accuracy)
+                let xScale = d3.scaleLinear()
+                    .domain([0, 20])
+                    .range([0, 15])
+
+                let area = d3.area()
+                    .x0(function(d) {
+                        // return -xScale(d.length)
+                        return 0
+                    })
+                    .x1(function(d) {
+                        return xScale(d.length)
+                    })
+                    .y(d => yScale(d.x0))
+                    .curve(d3.curveCatmullRom)
+
+                productBefore201807Group.append('g')
+                    .attr('class', 'product_glyph_violin_group')
+                    .attr('transform', function(d, i) {
+                        let translateX = -productGlyphSize / 2 + productGlyphSize - 15
+                        let translateY = -productGlyphSize / 2
+                        return 'translate(' + translateX + ', ' + translateY + ')'
+                    })
+                    .selectAll('g')
+                    .data(function(d, i) {
+                        let result = d.model.filter(function(d, i) {
+                            return i >= theK
+                        })
+                        return [result]
+                    })
+                    .enter()
+                    .append('g')
+                    .append('path')
+                    // .attr('transform', 'rotate(-90)')
+                    .style('fill', '#d9d9d9')
+                    .attr('d', function(d, i) {
+                        return area(histoChart(d))
+                    })
+            }
 
             // bar chart text
             product201807Group.append('text')
@@ -633,7 +833,7 @@ export default {
 
         drawLegend: function(maxVariance) {
             // variance legend
-            let legendWidth = 80
+            let legendWidth = 80 - 15
             let legendHeight = 10
             let totalWidth = 849.33
 
@@ -673,7 +873,7 @@ export default {
                 .attr('height', legendHeight)
                 .style('fill', 'url(#gradient_legend)')
                 .attr('transform', function(d) {
-                    let tempX = totalWidth - 140
+                    let tempX = totalWidth - 140 - 35
                     let tempY = 10
 
                     return 'translate(' + tempX + ', ' + tempY + ')'
@@ -681,7 +881,7 @@ export default {
 
             gradientLegendGroup.append('text')
                 .attr('y', 10)
-                .attr('x', totalWidth - 140 + 85)
+                .attr('x', totalWidth - 140 + 85 - 35 - 15)
                 .attr('dy', 8 + 2)
                 .attr('fill', function(d, i) {
                     // let tempColor = ['#fbb4ae', '#b3cde3', '#ccebc5', '#decbe4']
@@ -695,7 +895,7 @@ export default {
 
             gradientLegendGroup.append('text')
                 .attr('y', 10)
-                .attr('x', totalWidth - 140 - 5)
+                .attr('x', totalWidth - 140 - 5 - 35)
                 .attr('dy', 8 + 2)
                 .attr('fill', function(d, i) {
                     // let tempColor = ['#fbb4ae', '#b3cde3', '#ccebc5', '#decbe4']
@@ -709,7 +909,7 @@ export default {
 
             gradientLegendGroup.append('text')
                 .attr('y', 10)
-                .attr('x', totalWidth - 140 - 5 - 15)
+                .attr('x', totalWidth - 140 - 5 - 15 - 33)
                 .attr('dy', 8 + 2)
                 .attr('fill', function(d, i) {
                     // let tempColor = ['#fbb4ae', '#b3cde3', '#ccebc5', '#decbe4']
@@ -719,7 +919,7 @@ export default {
                 .attr('font-family', 'sans-serif')
                 .attr('text-anchor', 'end')
                 .attr('font-size', 14)
-                .text('variance: ')
+                .text('var: ')
 
             // model legend
             let topKModels = this.topKModels
@@ -773,6 +973,23 @@ export default {
                     return d
                     // return 'lstm_classic'
                 })
+
+            d3.select('#change_glyph_type_checkbox').style('display', 'block')
+            d3.select('#change_glyph_type_text').style('display', 'block')
+
+            // gradientLegendGroup.append('text')
+            //     .attr('y', 10)
+            //     .attr('x', totalWidth - 30)
+            //     .attr('dy', 8 + 2)
+            //     .attr('fill', function(d, i) {
+            //         // let tempColor = ['#fbb4ae', '#b3cde3', '#ccebc5', '#decbe4']
+            //         // return tempColor[i]
+            //         return '#000000'
+            //     })
+            //     .attr('font-family', 'sans-serif')
+            //     .attr('text-anchor', 'end')
+            //     .attr('font-size', 14)
+            //     .text('bar: ')
         }
     },
     mounted: function () {
@@ -809,15 +1026,16 @@ export default {
         height: 494px;
         margin: 2px;
         /* padding-right: 15px; */
-    }
-
-    #ProductView #product_view_svg_div {
-        width: 849.33px;
-        height: 494px;
-        /* margin: 0; */
-        /* padding-right: 15px; */
         overflow-y: auto;
         overflow-x: hidden;
+    }
+
+    #ProductView #product_view_svg {
+        width: 849.33px;
+        /* height: 494px; */
+        /* margin: 0; */
+        /* padding-right: 15px; */
+        
     }
 
     #ProductView .card {
@@ -826,6 +1044,28 @@ export default {
         height: 410px;
         width: 830px;
         border-radius: 0;
+    }
+
+    #ProductView #change_glyph_type_checkbox {
+        position: absolute;
+        top: 7px; 
+        left: 828px;
+        /* left: 798px; */
+        display: none;
+        font-family: sans-serif;
+        font-size: 14px;
+        fill: #000000;
+    }
+
+    #ProductView #change_glyph_type_text {
+        position: absolute;
+        top: 6px; 
+        /* left: 828px; */
+        left: 798px;
+        display: none;
+        font-family: sans-serif;
+        font-size: 14px;
+        fill: #000000;
     }
 
     /* #ProductExplorationView .card-header {
