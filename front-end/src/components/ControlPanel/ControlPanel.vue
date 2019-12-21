@@ -104,14 +104,6 @@ export default {
         drawModelList: function() {
             let newModelInformation = []
 
-            let tooltip = d3.select('#control_panel_tooltip')
-                .append('div')
-                .attr('class', 'tooltip')
-                .style('position', 'absolute')
-                .style('z-index', '10')
-                .style('visibility', 'hidden')
-                .text('a simple tooltip')
-
             for (let i = 0; i < this.modelInformation.modelInformation.length; i++) {
                 let currentModel = this.modelInformation.modelInformation[i] // object
                 let newCurrentModel = Object.assign({}, currentModel)
@@ -157,6 +149,16 @@ export default {
             let totalHeight = height + margin.top + margin.bottom
 
             d3.select('#overview_model_svg').html('')
+            d3.select('#control_panel_tooltip').html('')
+
+            let tooltip = d3.select('#control_panel_tooltip')
+                .append('div')
+                .attr('class', 'tooltip')
+                .style('position', 'absolute')
+                .style('z-index', '10')
+                .style('visibility', 'hidden')
+                .text('a simple tooltip')
+
             var svg = d3.select('#overview_model_svg')
                 .attr('width', totalWidth)
                 .attr('height', totalHeight)

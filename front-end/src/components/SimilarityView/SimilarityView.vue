@@ -146,7 +146,7 @@ export default {
                     .duration(200)
                     .style('opacity', 0.9)
 
-                let tooltipText = 'item: ' + d.item + '<br/>' +
+                let tooltipText = 'product: ' + d.item + '<br/>' +
                     'forecast: ' + (d.endPeriod + 1)
 
                 tooltip.html(tooltipText)

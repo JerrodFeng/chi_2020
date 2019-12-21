@@ -8,6 +8,7 @@
         </div>
         <!-- <div id='product_view_svg_div'> -->
         <svg id = 'product_view_svg'></svg>
+        <div id='product_view_tooltip'></div>
         <!-- </div> -->
     </div>
 </template>
@@ -152,6 +153,15 @@ export default {
             totalHeight = Math.max(487, totalHeight)
 
             d3.select('#product_view_svg').html('')
+            d3.select('#product_view_tooltip').html('')
+
+            let tooltip = d3.select('#product_view_tooltip')
+                .append('div')
+                .attr('class', 'tooltip')
+                .style('position', 'absolute')
+                .style('z-index', '10')
+                .style('visibility', 'hidden')
+                .text('a simple tooltip')
 
             // draw product view head
             d3.select('#product_view_svg')
@@ -299,6 +309,41 @@ export default {
                 }
             })
 
+            product201807Bar.on('mousemove', function(d) {
+                // console.log('mousemove d: ', d)
+                tooltip.style('visibility', 'visible')
+                tooltip.transition()
+                    .duration(200)
+                    .style('opacity', 0.9)
+
+                let tooltipText = 'product: ' + d.item + '<br/>' +
+                    'forecast: ' + (d.endPeriod + 1) + '<br/>' +
+                    'model: ' + d.model + '<br/>' +
+                    'forecasted demand: ' + parseFloat(d.predictValue).toFixed(4)
+
+                tooltip.html(tooltipText)
+                    .style('left', function () {
+                        if (d3.event.pageX - 746.67 < 424.67) {
+                            return (d3.event.pageX - 746.67 + 20) + 'px'
+                        } else {
+                            return (d3.event.pageX - 746.67 - 213) + 'px'
+                        }
+                    })
+                    .style('top', function () {
+                        return (d3.event.pageY - 40) + 'px'
+                    })
+            })
+            .on('mouseout', function(d) {
+                tooltip.transition()
+                    .duration(500)
+                    .style('opacity', 0.0)
+                    .on('end', function () {
+                        tooltip.html('')
+                            .style('left', '1500px')
+                            .style('top', '0px')
+                    })
+            })
+
             let productBefore201807Group = svg.append('g')
                 .selectAll('.product_before_201807_group')
                 .data(productDataBefore201807)
@@ -368,7 +413,7 @@ export default {
                     })
 
                 // draw variance arc
-                productBefore201807Group.append('g')
+                let varianceArcChart = productBefore201807Group.append('g')
                     .attr('class', 'product_glyph_variance_group')
                     .selectAll('path')
                     .data(function(d, i) {
@@ -387,6 +432,44 @@ export default {
                     })
                     .style('stroke', '#d9d9d9')
                     .style('stroke-width', 1)
+
+                varianceArcChart.on('mousemove', function(d) {
+                    // console.log('mousemove d: ', d)
+                    tooltip.style('visibility', 'visible')
+                    tooltip.transition()
+                        .duration(200)
+                        .style('opacity', 0.9)
+
+                    let tooltipText = 'product: ' + d.item + '<br/>' +
+                        'forecast: ' + (d.endPeriod + 1) + '<br/>' +
+                        'model: ' + d.model + '<br/>' +
+                        'accuracy: ' + parseFloat(d.accuracy).toFixed(4) + '<br/>' +
+                        'variance: ' + parseFloat(d.modelItemVar).toFixed(4) + '<br/>' +
+                        'forecasted demand: ' + parseFloat(d.predictValue).toFixed(4) + '<br/>' +
+                        'real demand: ' + parseFloat(d.realValue).toFixed(4)
+
+                    tooltip.html(tooltipText)
+                        .style('left', function () {
+                            if (d3.event.pageX - 746.67 < 424.67) {
+                                return (d3.event.pageX - 746.67 + 20) + 'px'
+                            } else {
+                                return (d3.event.pageX - 746.67 - 213) + 'px'
+                            }
+                        })
+                        .style('top', function () {
+                            return (d3.event.pageY - 40) + 'px'
+                        })
+                })
+                .on('mouseout', function(d) {
+                    tooltip.transition()
+                        .duration(500)
+                        .style('opacity', 0.0)
+                        .on('end', function () {
+                            tooltip.html('')
+                                .style('left', '1500px')
+                                .style('top', '0px')
+                        })
+                })
 
                 // draw accuracy arc
                 let accuracyY = d3.scaleLinear()
@@ -434,6 +517,44 @@ export default {
                         'item': d.item,
                         'endPeriod': d.endPeriod
                     }
+                })
+
+                productBefore201807Arc.on('mousemove', function(d) {
+                    // console.log('mousemove d: ', d)
+                    tooltip.style('visibility', 'visible')
+                    tooltip.transition()
+                        .duration(200)
+                        .style('opacity', 0.9)
+
+                    let tooltipText = 'product: ' + d.item + '<br/>' +
+                        'forecast: ' + (d.endPeriod + 1) + '<br/>' +
+                        'model: ' + d.model + '<br/>' +
+                        'accuracy: ' + parseFloat(d.accuracy).toFixed(4) + '<br/>' +
+                        'variance: ' + parseFloat(d.modelItemVar).toFixed(4) + '<br/>' +
+                        'forecasted demand: ' + parseFloat(d.predictValue).toFixed(4) + '<br/>' +
+                        'real demand: ' + parseFloat(d.realValue).toFixed(4)
+
+                    tooltip.html(tooltipText)
+                        .style('left', function () {
+                            if (d3.event.pageX - 746.67 < 424.67) {
+                                return (d3.event.pageX - 746.67 + 20) + 'px'
+                            } else {
+                                return (d3.event.pageX - 746.67 - 213) + 'px'
+                            }
+                        })
+                        .style('top', function () {
+                            return (d3.event.pageY - 40) + 'px'
+                        })
+                })
+                .on('mouseout', function(d) {
+                    tooltip.transition()
+                        .duration(500)
+                        .style('opacity', 0.0)
+                        .on('end', function () {
+                            tooltip.html('')
+                                .style('left', '1500px')
+                                .style('top', '0px')
+                        })
                 })
 
                 // draw the violin chart
@@ -1048,9 +1169,9 @@ export default {
 
     #ProductView #change_glyph_type_checkbox {
         position: absolute;
-        top: 7px; 
+        top: 8px; 
         left: 828px;
-        /* left: 798px; */
+        /* left: 698px; */
         display: none;
         font-family: sans-serif;
         font-size: 14px;
@@ -1059,13 +1180,20 @@ export default {
 
     #ProductView #change_glyph_type_text {
         position: absolute;
-        top: 6px; 
-        /* left: 828px; */
+        top: 8px; 
+        /* left: 628px; */
         left: 798px;
         display: none;
         font-family: sans-serif;
         font-size: 14px;
         fill: #000000;
+    }
+
+    #ProductView .tooltip {
+        background-color: #fff;
+        border: 2px solid #ccc;
+        border-radius: 8px;
+        padding: 10px;
     }
 
     /* #ProductExplorationView .card-header {

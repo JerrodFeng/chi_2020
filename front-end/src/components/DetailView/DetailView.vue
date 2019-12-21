@@ -28,6 +28,7 @@ export default {
             console.log('DetailView::this.selectedItem change to: ', newValue)
 
             d3.select('#detail_view_svg').html('')
+            d3.select('#detail_view_tooltip').html('')
             // draw detail view head
             d3.select('#detail_view_svg')
                 .append('text')
@@ -91,6 +92,14 @@ export default {
                 .append('g')
                 .attr('transform', 'translate(' + margin.left + ', ' + margin.top + ')')
 
+            let tooltip = d3.select('#detail_view_tooltip')
+                .append('div')
+                .attr('class', 'tooltip')
+                .style('position', 'absolute')
+                .style('z-index', '10')
+                .style('visibility', 'hidden')
+                .text('a simple tooltip')
+
             var modelPerformanceGroup = svg.append('g')
                 .selectAll('.model_performance_group')
                 .data(modelPerformanceData)
@@ -134,8 +143,9 @@ export default {
                     return d.model + ': '
                 })
 
-            modelPerformanceGroup.selectAll('.model_performance_rectangle')
+            let modelPerformanceRect = modelPerformanceGroup.selectAll('.model_performance_rectangle')
                 .data(function(d) {
+                    // console.log('special test: ', d.accuracy)
                     return d.accuracy
                 })
                 .enter()
@@ -178,6 +188,39 @@ export default {
                         return 0
                     }
                 })
+
+            modelPerformanceRect.on('mousemove', function(d) {
+                // console.log('mousemove d: ', d)
+                tooltip.style('visibility', 'visible')
+                tooltip.transition()
+                    .duration(200)
+                    .style('opacity', 0.9)
+
+                let tooltipText = 'model: ' + d.model + '<br/>' +
+                    'accuracy: ' + parseFloat(d.accuracy).toFixed(4)
+
+                tooltip.html(tooltipText)
+                    .style('left', function () {
+                        if (d3.event.pageX - 320 < 265) {
+                            return (d3.event.pageX - 320 + 20) + 'px'
+                        } else {
+                            return (d3.event.pageX - 320 - 152) + 'px'
+                        }
+                    })
+                    .style('top', function () {
+                        return (d3.event.pageY - 498 - 40) + 'px'
+                    })
+            })
+            .on('mouseout', function(d) {
+                tooltip.transition()
+                    .duration(500)
+                    .style('opacity', 0.0)
+                    .on('end', function () {
+                        tooltip.html('')
+                            .style('left', '1500px')
+                            .style('top', '0px')
+                    })
+            })
 
             // add the legend of bar chart
             let legendGroup = d3.select('#detail_view_svg')
