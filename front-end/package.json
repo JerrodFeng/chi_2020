@@ -15,7 +15,7 @@
   },
   "dependencies": {
     "bootstrap": "^4.0.0-beta.3",
-    "d3": "^4.10.0",
+    "d3": "^7.6.1",
     "d3-lasso": "0.0.5",
     "heatmap.js": "^2.0.5",
     "jquery": "^3.2.1",
